@@ -98,6 +98,8 @@
 
   // Sayfadaki "Takım kaydı: ..." satırının metni
   function satirMetni(sonuc, n) {
+    if (sonuc.atlandi && sonuc.hata && sonuc.hata !== 'ayar yok')
+      return 'Takım kaydı: kapalı. ' + sonuc.hata;
     if (sonuc.atlandi) return 'Takım kaydı: kapalı (Supabase ayarı yok, oyun yalnızca bu tarayıcıda kayıt tutuyor).';
     if (sonuc.hata) return 'Takım kaydı: şu an alınamadı (' + sonuc.hata + ')';
     if (!sonuc.adet) return 'Takım kaydı: henüz görev yok.';

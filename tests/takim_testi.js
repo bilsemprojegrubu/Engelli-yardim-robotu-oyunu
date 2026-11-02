@@ -34,6 +34,8 @@ test('service_role anahtarı reddedilir', async function () {
   var r = await Takim.gonder({ komut: 'x', basari: true, kavramaTorku: 3, hataYuzdesi: 5, kapakTorku: null }, 'OYN-TEST1234');
   assert.strictEqual(c.length, 0);
   assert.ok(/service_role/.test(r.hata));
+  var sat = Takim.satirMetni(await Takim.sonGorevler(50), 50);
+  assert.ok(/service_role/.test(sat), 'takım satırı nedenini söylemeli: ' + sat);
 });
 
 test('http adresi reddedilir', async function () {

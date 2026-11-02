@@ -286,6 +286,9 @@
       $('beceriListe').appendChild(li);
     });
 
+    var tk = Takim.durum();
+    if (!tk.hazir && tk.neden !== 'ayar yok') gunluk('Supabase kapalı: ' + tk.neden, 'hata');
+
     grafigiGuncelle();
     takimGuncelle();
     arayuzuGuncelle();
