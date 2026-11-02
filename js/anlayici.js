@@ -48,10 +48,12 @@
     sandalye: { belirtme: 'tekerlekli sandalyeyi', iyelik: 'tekerlekli sandalyenin' }
   };
   var ODA_KALIPLARI = [
-    { id: 'salon',  re: /^(salon\w*|oturma)$/ },
-    { id: 'mutfak', re: /^mutfa\w*$/ },
-    { id: 'yatak',  re: /^(yata[kg]\w*)$/ },
-    { id: 'banyo',  re: /^banyo\w*$/ }
+    // Oda adı + o odadaki mobilya/yer adları ("beni küvete götür" → banyo).
+    // Eşya adlarıyla (havlu, su...) çakışmasın diye "havluluk" gibi kelimeler eklenmedi.
+    { id: 'salon',  re: /^(salon\w*|oturma|kanepe\w*|koltuk\w*|sehpa\w*)$/ },
+    { id: 'mutfak', re: /^(mutfa\w*|tezgah\w*|masa\w*|yemek)$/ },
+    { id: 'yatak',  re: /^(yata[kg]\w*|komodin\w*)$/ },
+    { id: 'banyo',  re: /^(banyo\w*|kuvet\w*|dus\w*|klozet\w*|tuvalet\w*|wc|lavabo\w*)$/ }
   ];
 
   // Fiiller: sıra önemli değil, her kelime en fazla bir fiile denk gelir.
