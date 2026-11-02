@@ -40,8 +40,9 @@
     r.lang = 'tr-TR';
     r.interimResults = false;
     r.maxAlternatives = 1;
-    var sonucAldi = false;
-    r.onstart = function () { cb.basladi && cb.basladi(); };
+    var sonucAldi = false, basladiMi = false, bekci = null;
+    function temizle() { if (bekci) { clearTimeout(bekci); bekci = null; } }
+    r.onstart = function () { basladiMi = true; temizle(); cb.basladi && cb.basladi(); };
     r.onresult = function (ev) {
       var metin = ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : '';
       sonucAldi = true;
@@ -53,12 +54,22 @@
       sonucAldi = true;
     };
     r.onend = function () {
+      temizle();
       aktif = null;
       if (!sonucAldi) cb.hata('Ses duyamadım. Tekrar dene ya da yaz.');
       cb.bitti && cb.bitti();
     };
+    // Bazı ortamlarda izin penceresi cevaplanmaz ya da hiç olay gelmez: sessiz kalma, nedenini söyle.
+    bekci = setTimeout(function () {
+      if (basladiMi) return;
+      sonucAldi = true;
+      try { r.abort(); } catch (x) { /* yoksay */ }
+      aktif = null;
+      cb.hata('Mikrofon açılmadı. Tarayıcı izin sorduysa "İzin ver" de, ya da mikrofon ayarlarını kontrol et. Şimdilik yazıyla devam edebilirsin.');
+      cb.bitti && cb.bitti();
+    }, 6000);
     try { r.start(); }
-    catch (x) { aktif = null; cb.hata('Mikrofon başlatılamadı: ' + x.message); cb.bitti && cb.bitti(); }
+    catch (x) { temizle(); aktif = null; cb.hata('Mikrofon başlatılamadı: ' + x.message); cb.bitti && cb.bitti(); }
   }
 
   function durdur() { if (aktif) { try { aktif.abort(); } catch (x) { /* yoksay */ } } }
