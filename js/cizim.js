@@ -150,7 +150,7 @@
     var c = canvas.getContext('2d');
     function kare() {
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cizSahne(c, dunyaFn(), secenekFn());
+      if (canvas.offsetParent !== null) cizSahne(c, dunyaFn(), secenekFn());
       window.requestAnimationFrame(kare);
     }
     kare();

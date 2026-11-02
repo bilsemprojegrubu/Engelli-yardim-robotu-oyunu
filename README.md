@@ -267,3 +267,8 @@ node tests/takim_testi.js     # Supabase modülü (sahte fetch) + gizli anahtar 
 - Robot bir seferde tek eşya taşır. Kullanıcı ve robot ızgarada birbirine engel olmaz.
 - Fizik basittir (kayma olasılığı, tork ölçümü, çekiş kuvveti); gerçek robotun dinamiğini yansıtmaz.
 - Supabase bağlantısı gerçek bir projeyle henüz denenmedi; sahte sunucu testleri vardır.
+
+## 3D görünüm
+
+Oyun varsayılan olarak Three.js ile gerçek 3D açılır (sürükle: döndür, tekerlek/iki parmak: yakınlaştır, zemine tıkla: kendini taşı). "2D" düğmesi eski kuş bakışı görünüme döner; tarayıcıda WebGL yoksa 2D otomatik kalır.
+Three.js r128 ve OrbitControls (MIT lisanslı) `js/vendor/` altında depodadır, bu yüzden internetsiz de çalışır.
