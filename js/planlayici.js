@@ -19,6 +19,11 @@
 
   function mesafe(a, b) { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
 
+  // Anlayıcının "yer" tanımını beceri katmanının hedef biçimine çevirir
+  function yerHedefi(y) {
+    return y.tip === 'esya' ? { tur: 'esya', esya: y.id } : { tur: 'aygit', aygit: y.id };
+  }
+
   function kullaniciOdasi(g) {
     var h = Dunya.hucre(g.kullanici);
     return Dunya.odaBul(g, h.x, h.y);
@@ -118,7 +123,8 @@
 
     git: function (g, gorev) {
       var a = onHazirlik(g, g.robot.tuttugu);
-      a.push(adim('git', { hedef: { tur: 'oda', oda: gorev.oda } }, ODA_ADLARI[gorev.oda].yonelme + ' git'));
+      if (gorev.yer) a.push(adim('git', { hedef: yerHedefi(gorev.yer) }, 'Hedefin yanına git'));
+      else a.push(adim('git', { hedef: { tur: 'oda', oda: gorev.oda } }, ODA_ADLARI[gorev.oda].yonelme + ' git'));
       return { adimlar: a };
     },
 
@@ -127,6 +133,12 @@
     },
 
     gotur: function (g, gorev) {
+      if (gorev.hedefYer) {                                   // mobilya ya da eşyanın yanına
+        var ay = onHazirlik(g, null);
+        ay.push(adim('git', { hedef: { tur: 'kullanici' } }, 'Yanına git'));
+        ay.push(adim('eslikEt', { hedef: yerHedefi(gorev.hedefYer) }, 'Seni hedefin yanına götür'));
+        return { adimlar: ay };
+      }
       if (kullaniciOdasi(g) === gorev.hedefOda)
         return { adimlar: [], bilgi: 'Zaten ' + ODA_ADLARI[gorev.hedefOda].yalin + 'dasın.' };
       var a = onHazirlik(g, null);

@@ -48,13 +48,69 @@
     sandalye: { belirtme: 'tekerlekli sandalyeyi', iyelik: 'tekerlekli sandalyenin' }
   };
   var ODA_KALIPLARI = [
-    // Oda adı + o odadaki mobilya/yer adları ("beni küvete götür" → banyo).
-    // Eşya adlarıyla (havlu, su...) çakışmasın diye "havluluk" gibi kelimeler eklenmedi.
-    { id: 'salon',  re: /^(salon\w*|oturma|kanepe\w*|koltuk\w*|sehpa\w*)$/ },
-    { id: 'mutfak', re: /^(mutfa\w*|tezgah\w*|masa\w*|yemek)$/ },
-    { id: 'yatak',  re: /^(yata[kg]\w*|komodin\w*)$/ },
-    { id: 'banyo',  re: /^(banyo\w*|kuvet\w*|dus\w*|klozet\w*|tuvalet\w*|wc|lavabo\w*)$/ }
+    { id: 'salon',  re: /^(salon\w*|oturma)$/ },
+    { id: 'mutfak', re: /^mutfa\w*$/ },
+    { id: 'yatak',  re: /^(yata[kg]\w*)$/ },
+    { id: 'banyo',  re: /^banyo\w*$/ }
   ];
+
+  // ---------- "Yerler": evdeki HER mobilya (küvet, kanepe, masa...) ----------
+  // Mobilya listesi dunya.js'ten gelir; yeni mobilya eklenince burası otomatik tanır.
+  // Aynı şeye verilen başka adlar (eş anlamlılar) burada:
+  var YER_ESANLAMLI = {
+    tv: ['televizyon', 'tivi', 'tv'], klozet: ['tuvalet', 'wc'], kuvet: ['dus'],
+    kanepe: ['koltuk'], tezgah: ['ocak'], lavabo: ['musluk'], buzdolabi: ['dolap']
+  };
+  var YER_GORUNEN_AD = { tv: 'televizyon' };       // "TV" yerine okunaklı ad
+  var YERLER = Dunya.MOBILYALAR.map(function (m) {
+    var kokler = [katla(m.ad)].concat(YER_ESANLAMLI[m.id] || []);
+    return { id: m.id, kokler: kokler, ad: YER_GORUNEN_AD[m.id] || m.ad.toLowerCase() };
+  });
+
+  // "kuvete", "kuvetin", "yatagi" gibi çekimli yazımı kökle eşleştirir (k→ğ yumuşaması dahil).
+  // Dönüş: eşleşirse kökten sonra kalan ek ("kuvete" → "e"), yoksa null.
+  function kokEki(w, kok) {
+    if (w === kok) return '';
+    if (kok.length < 2 || w.length > kok.length + 6) return null;
+    if (w.indexOf(kok) === 0) return w.slice(kok.length);
+    if (/k$/.test(kok) && w.indexOf(kok.slice(0, -1) + 'g') === 0) return w.slice(kok.length);
+    return null;
+  }
+  // Hâl, sözcüğün tamamına değil kökten sonraki eke bakılarak bulunur:
+  // "kuvete" = küvet + e (yönelme); "kuvette" = küvet + te (bulunma).
+  function yerBulKelime(w) {
+    if (ODA_KALIPLARI.some(function (o) { return o.re.test(w); })) return null;   // oda adı önce gelir
+    for (var i = 0; i < YERLER.length; i++)
+      for (var k = 0; k < YERLER[i].kokler.length; k++) {
+        var ek = kokEki(w, YERLER[i].kokler[k]);
+        if (ek !== null) return { id: YERLER[i].id, hal: hal(ek) };
+      }
+    return null;
+  }
+
+  // Türkçe tamlayan eki: küvet → küvetin, masa → masanın, havluluk → havluluğun
+  function tamlayan(ad) {
+    var k = ad.toLowerCase();
+    var son = (k.match(/[aeıioöuüâ](?=[^aeıioöuüâ]*$)/) || ['e'])[0];
+    var sesli = /[aeıioöuüâ]$/.test(k);
+    var e = { a: 'ı', 'ı': 'ı', 'â': 'ı', o: 'u', u: 'u', e: 'i', i: 'i', 'ö': 'ü', 'ü': 'ü' }[son];
+    if (!sesli && /k$/.test(k) && k.length > 3) k = k.slice(0, -1) + 'ğ';
+    return k + (sesli ? 'n' : '') + e + 'n';
+  }
+  function yerYanindaMetni(y) {
+    if (y.tip === 'esya') return ESYA_AD[y.id].iyelik + ' yanına';
+    var m = YERLER.filter(function (z) { return z.id === y.id; })[0];
+    return tamlayan(m.ad) + ' yanına';
+  }
+  function bilinenYerler() {
+    var oda = Object.keys(ODA_ADLARI).map(function (k) { return ODA_ADLARI[k].yalin; });
+    var mob = YERLER.map(function (y) { return y.ad; });
+    return oda.concat(mob).join(', ');
+  }
+  function bilinenEsyalar() {
+    return 'su şişesi, kumanda, ilaç kutusu, havlu, tekerlekli sandalye';
+  }
+
 
   // Fiiller: sıra önemli değil, her kelime en fazla bir fiile denk gelir.
   var FIILLER = [
@@ -137,6 +193,7 @@
   function incele(kelimeler) {
     var b = { fiiller: [], esyalar: [], odalar: [], tv: false, isik: false, kapi: false,
               kapak: false, buzdolabi: false, beni: false, hepsi: false, olumsuz: false, cogulIsik: false,
+              yerler: [], esyaHaller: {},
               metin: kelimeler.join(' ') };
     kelimeler.forEach(function (w, i) {
       if (OLUMSUZ.test(w)) { b.olumsuz = true; return; }
@@ -144,8 +201,12 @@
       if (f && b.fiiller.indexOf(f) < 0) b.fiiller.push(f);
 
       ESYALAR.forEach(function (e) {
-        if (e.re.test(w) && b.esyalar.indexOf(e.id) < 0) b.esyalar.push(e.id);
+        if (e.re.test(w) && b.esyalar.indexOf(e.id) < 0) { b.esyalar.push(e.id); b.esyaHaller[e.id] = hal(w); }
       });
+      // "yatak odası" gibi oda adından sonra "oda" geliyorsa mobilya sayma
+      var yer = yerBulKelime(w);
+      if (yer && !b.yerler.some(function (x) { return x.id === yer.id; }))
+        b.yerler.push({ tip: 'aygit', id: yer.id, hal: yer.hal });
       ODA_KALIPLARI.forEach(function (o) {
         if (!o.re.test(w)) return;
         // "yatak odasına": hâl eki "oda..." kelimesinde olur
@@ -181,11 +242,21 @@
       case 'kapiAc': return (g.oda ? odaIyelik(g.oda) + ' kapısını' : 'kapıyı') + ' aç';
       case 'kapiKapat': return (g.oda ? odaIyelik(g.oda) + ' kapısını' : 'kapıyı') + ' kapat';
       case 'buzdolabiAc': return 'buzdolabını aç';
-      case 'git': return ODA_ADLARI[g.oda].yonelme + ' git';
+      case 'git': return g.yer ? yerYanindaMetni(g.yer) + ' git' : ODA_ADLARI[g.oda].yonelme + ' git';
       case 'yanimaGel': return 'yanına gel';
-      case 'gotur': return 'seni ' + ODA_ADLARI[g.hedefOda].yonelme + ' götür';
+      case 'gotur': return g.hedefYer ? 'seni ' + yerYanindaMetni(g.hedefYer) + ' götür'
+                                      : 'seni ' + ODA_ADLARI[g.hedefOda].yonelme + ' götür';
     }
     return g.tur;
+  }
+
+  // Cümledeki "-e/-a" hâlli (gidilecek) mobilyayı ya da eşyayı seçer
+  function hedefYerSec(b) {
+    var y = b.yerler.filter(function (h) { return h.hal === 'yonelme'; })[0];
+    if (y) return { tip: y.tip, id: y.id };
+    var e = b.esyalar.filter(function (id) { return b.esyaHaller[id] === 'yonelme'; })[0];
+    if (e) return { tip: 'esya', id: e };
+    return null;
   }
 
   // ---------- Bir parçayı görev(ler)e çevir ----------
@@ -197,10 +268,12 @@
     if (f('dur')) return { dur: true };
     if (b.olumsuz) return { hata: 'Olumsuz komutları (ör. "getirme") yapmıyorum. Ne yapmamı istediğini söyle.' };
 
-    // "beni salona götür"
+    // "beni salona götür", "beni küvete götür", "beni kumandaya götür"
     if (b.beni && (f('gotur') || f('git'))) {
+      var yer = hedefYerSec(b);                      // mobilya/eşya varsa en özel hedef odur
+      if (yer) return { gorevler: [{ tur: 'gotur', hedefYer: yer }] };
       var hedef = b.odalar.filter(function (o) { return o.hal === 'yonelme'; })[0] || b.odalar[0];
-      if (!hedef) return { hata: 'Seni nereye götüreyim? (ör. "beni salona götür")' };
+      if (!hedef) return { hata: 'Seni nereye götüreyim? Gidebileceğim yerler: ' + bilinenYerler() + '.' };
       return { gorevler: [{ tur: 'gotur', hedefOda: hedef.id }] };
     }
 
@@ -256,6 +329,12 @@
       return { gorevler: gorevler };
     }
 
+    // "küvete git", "kumandaya git" (oda değil, belirli bir yer/eşya)
+    if (f('git') && !b.beni) {
+      var gy = hedefYerSec(b);
+      if (gy) return { gorevler: [{ tur: 'git', yer: gy }] };
+    }
+
     // Odaya git
     if (f('git') && oda) return { gorevler: [{ tur: 'git', oda: oda }] };
 
@@ -264,6 +343,20 @@
 
   var ORNEKLER = 'Örnekler: "mutfaktan su getir", "şişeyi açıp getir", "ışığı kapat", ' +
     '"tv yi aç", "kapıyı kapat", "beni salona götür", "buzdolabını aç".';
+
+  // Anlaşılmayan parça için işe yarar bir mesaj: bilinmeyen kelimeyi ve bilinenleri söyler
+  function anlasilmadiMesaji(p, fiiller) {
+    var bilinmeyen = p.metin.split(' ').filter(function (w) {
+      return w && !fiilTuru(w) && !YARDIMCI.test(w) && !/^(beni|bana|bizi|bize|bunu|sunu|onu)$/.test(w) &&
+        !ESYALAR.some(function (e) { return e.re.test(w); }) && !yerBulKelime(w) &&
+        !ODA_KALIPLARI.some(function (o) { return o.re.test(w); });
+    })[0];
+    if (bilinmeyen && fiiller.indexOf('getir') >= 0)
+      return '"' + bilinmeyen + '" diye bir şey bulamadım. Getirebileceklerim: ' + bilinenEsyalar() + '.';
+    if (bilinmeyen && (fiiller.indexOf('git') >= 0 || fiiller.indexOf('gotur') >= 0))
+      return '"' + bilinmeyen + '" diye bir yer bilmiyorum. Gidebileceğim yerler: ' + bilinenYerler() + '.';
+    return 'Şunu anlayamadım: "' + p.metin + '"';
+  }
 
   // ---------- Ana fonksiyon ----------
   function anla(metin) {
@@ -283,7 +376,7 @@
 
     parcalar.forEach(function (p, i) {
       var bos = !p.esyalar.length && !p.odalar.length && !p.fiiller.length && !p.tv && !p.isik &&
-        !p.kapi && !p.kapak && !p.buzdolabi && !p.beni;
+        !p.kapi && !p.kapak && !p.buzdolabi && !p.beni && !p.yerler.length;
       if (bos) return; // "lütfen", "bana" gibi dolgu
       var s = parcaAnla(p, fiilListeleri[i]);
       // "kapağını aç ve bana getir": eşya adı yok, bir önceki işteki eşya kastedilir
@@ -291,7 +384,7 @@
         var onceki = gorevler[gorevler.length - 1];
         if (onceki && onceki.esya) s = { gorevler: [{ tur: 'getir', esya: onceki.esya, kapakAc: false, hedefOda: null, kaynakOda: null }] };
       }
-      if (!s) { mesajlar.push('Şunu anlayamadım: "' + p.metin + '"'); return; }
+      if (!s) { mesajlar.push(anlasilmadiMesaji(p, fiilListeleri[i])); return; }
       if (s.dur) { dur = true; return; }
       if (s.hata) { mesajlar.push(s.hata); return; }
       s.gorevler.forEach(function (g) { g.ozet = ozetle(g); gorevler.push(g); });
