@@ -91,8 +91,12 @@ test('takım satırı: son N görevde %X başarı', async function () {
 
 test('config.js içinde gizli anahtar yok', async function () {
   var icerik = require('fs').readFileSync(__dirname + '/../config.js', 'utf8');
-  assert.ok(!/eyJ[A-Za-z0-9_-]{20,}/.test(icerik), 'config.js içinde JWT var; boş olmalı');
-  assert.ok(/SUPABASE_URL:\s*''/.test(icerik));
+  // Gizli (secret/service_role) anahtar asla olmamalı; publishable/anon anahtar olabilir
+  assert.ok(!/sb_secret_/.test(icerik), 'config.js içinde sb_secret_ anahtarı var');
+  (icerik.match(/eyJ[A-Za-z0-9_-]{20,}\.([A-Za-z0-9_-]{20,})\./g) || []).forEach(function (j) {
+    var yuk = Buffer.from(j.split('.')[1], 'base64').toString('utf8');
+    assert.ok(!/service_role/.test(yuk), 'config.js içinde service_role JWT var');
+  });
 });
 
 test('depodaki hiçbir dosyada service_role anahtarı değeri yok', async function () {
