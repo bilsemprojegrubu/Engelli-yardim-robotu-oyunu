@@ -16,10 +16,15 @@
 
   <main class="duzen">
     <section class="sahne-kutu" aria-label="Ev planı">
-      <div class="sahne-sarmal">
-        <canvas id="sahne" aria-label="Kuş bakışı ev: robot turuncu, sen mavi daire"></canvas>
+      <div class="gorunum-sira" role="group" aria-label="Görünüm">
+        <button id="gorunum3d" class="gorunum" type="button" aria-pressed="true">3D</button>
+        <button id="gorunum2d" class="gorunum" type="button" aria-pressed="false">2D</button>
+        <button id="kameraSifirla" class="gorunum" type="button">Kamerayı sıfırla</button>
       </div>
-      <p class="ipucu">Mavi daire sensin. Haritada boş bir yere tıklayarak yerini değiştirebilirsin (robot çalışırken değil).
+      <div class="sahne-sarmal" id="sahneSarmal">
+        <canvas id="sahne" hidden aria-label="Kuş bakışı ev: robot turuncu, sen mavi daire"></canvas>
+      </div>
+      <p class="ipucu">Mavi figür sensin. 3D'de sürükleyerek döndür, tekerlek/iki parmakla yakınlaştır. Zemine tıklayarak yerini değiştirebilirsin (robot çalışırken değil).
         Küçük koyu nokta şişenin kapağının sıkı olduğunu, boş nokta açık olduğunu gösterir.</p>
       <div class="acil-sira">
         <button id="acilBtn" class="acil" type="button" aria-pressed="false">ACİL DURDUR</button>
@@ -108,7 +113,10 @@
   <script src="js/takim.js"></script>
   <script src="js/grafik.js"></script>
   <script src="js/ses.js"></script>
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/vendor/OrbitControls.js"></script>
   <script src="js/cizim.js"></script>
+  <script src="js/cizim3d.js"></script>
   <script src="js/oyun.js"></script>
 </body>
 </html>

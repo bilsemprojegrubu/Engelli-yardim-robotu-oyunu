@@ -96,3 +96,9 @@ details.kart summary { cursor: pointer; font-weight: 700; }
 .beceri-liste { padding-left: 18px; font-size: .85rem; }
 .beceri-liste code { background: #eef1f5; padding: 1px 5px; border-radius: 4px; }
 .alt-bilgi { text-align: center; color: var(--soluk); font-size: .85rem; padding: 4px 16px 20px; }
+
+.gorunum-sira { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.gorunum { border: 1px solid var(--cizgi); background: var(--kart); border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; color: var(--yazi); }
+.gorunum[aria-pressed="true"] { background: #ff9f1c; color: #3a2400; font-weight: 700; border-color: #c97a00; }
+#sahne3d { display: block; border-radius: 8px; cursor: grab; touch-action: none; }
+#sahne[hidden], #sahne3d[hidden], .gorunum[hidden] { display: none; }

@@ -212,6 +212,26 @@
   }
 
   // ---------- Başlangıç ----------
+  // 2D / 3D görünüm düğmeleri; 3D desteklenmiyorsa (WebGL yok) yalnız 2D kalır.
+  function gorunumKur(uc) {
+    var c2 = $('sahne'), b3 = $('gorunum3d'), b2 = $('gorunum2d'), bs = $('kameraSifirla');
+    function sec(mod) {
+      var u3 = mod === '3d' && !!uc;
+      c2.hidden = u3;
+      var c3 = $('sahne3d'); if (c3) c3.hidden = !u3;
+      b3.setAttribute('aria-pressed', String(u3)); b2.setAttribute('aria-pressed', String(!u3));
+      bs.hidden = !u3;
+      try { localStorage.setItem('gorunum', u3 ? '3d' : '2d'); } catch (e) { /* önemli değil */ }
+    }
+    if (!uc) { b3.hidden = true; b2.hidden = true; bs.hidden = true; c2.hidden = false; return; }
+    b3.addEventListener('click', function () { sec('3d'); });
+    b2.addEventListener('click', function () { sec('2d'); });
+    bs.addEventListener('click', function () { uc.kamerayiSifirla(); });
+    var kayit = '3d';
+    try { kayit = localStorage.getItem('gorunum') || '3d'; } catch (e) { /* önemli değil */ }
+    sec(kayit);
+  }
+
   function baslat() {
     dunyayiKur();
     $('oyuncuKodu').textContent = kod;
@@ -222,12 +242,16 @@
     $('torkNot').textContent = 'Şişe kapağını açmak için gereken tork ' + virgul(S.KAPAK_TORKU_MIN_NM, 1) + '–' +
       virgul(S.KAPAK_TORKU_MAX_NM, 1) + ' N·m arasında rastgele. Kavrama torku kapak torkundan küçükse kapak açılmaz.';
 
-    Cizim.baslat($('sahne'), function () { return dunya; }, function () { return { acilDurdu: acilDurdu }; },
-      function (x, y) {
-        if (mesgul || acilDurdu) return;
-        if (!Dunya.yurunebilir(dunya, x, y)) return;
-        dunya.kullanici.x = x + 0.5; dunya.kullanici.y = y + 0.5;
-      });
+    var tikla = function (x, y) {
+      if (mesgul || acilDurdu) return;
+      if (!Dunya.yurunebilir(dunya, x, y)) return;
+      dunya.kullanici.x = x + 0.5; dunya.kullanici.y = y + 0.5;
+    };
+    var dunyaFn = function () { return dunya; };
+    var secenekFn = function () { return { acilDurdu: acilDurdu }; };
+    Cizim.baslat($('sahne'), dunyaFn, secenekFn, tikla);
+    var uc = window.Cizim3D ? Cizim3D.baslat($('sahneSarmal'), dunyaFn, secenekFn, tikla) : null;
+    gorunumKur(uc);
 
     $('komutForm').addEventListener('submit', function (ev) {
       ev.preventDefault();
