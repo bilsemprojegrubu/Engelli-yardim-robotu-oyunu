@@ -1,0 +1,98 @@
+:root {
+  --zemin: #f4f6f8;
+  --kart: #ffffff;
+  --yazi: #1f2933;
+  --soluk: #5b6773;
+  --cizgi: #d9dee4;
+  --vurgu: #2563eb;
+  --vurgu-yazi: #ffffff;
+  --acil: #c40000;
+  --basari: #1a7f37;
+  --hata: #b42318;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--zemin); color: var(--yazi);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.gizli { position: absolute; left: -9999px; }
+.ust { padding: 14px 16px 6px; max-width: 1280px; margin: 0 auto; }
+.ust h1 { margin: 0; font-size: 1.5rem; }
+.alt { margin: 2px 0 8px; color: var(--soluk); font-size: .92rem; }
+.takim { margin: 0; padding: 8px 12px; background: #e8f0fe; border-radius: 8px; font-weight: 600; }
+
+.duzen {
+  display: grid; gap: 16px; padding: 10px 16px 16px; max-width: 1280px; margin: 0 auto;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 1fr); align-items: start;
+}
+@media (max-width: 900px) {
+  .duzen { grid-template-columns: 1fr; }
+  /* Küçük ekranda acil durdur düğmesi hep ekranın altında görünür */
+  .acil-sira { position: sticky; bottom: 0; background: var(--kart); padding: 8px 0; z-index: 5; }
+}
+
+.sahne-kutu, .kart {
+  background: var(--kart); border: 1px solid var(--cizgi); border-radius: 12px; padding: 12px;
+}
+.yan { display: grid; gap: 12px; }
+.kart h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.sahne-sarmal { width: 100%; }
+#sahne { width: 100%; height: auto; aspect-ratio: 17 / 13; display: block; border-radius: 8px; cursor: pointer; background: #4a4f5c; }
+.ipucu { margin: 8px 0; font-size: .85rem; color: var(--soluk); }
+
+button {
+  font: inherit; font-weight: 600; padding: 9px 14px; border-radius: 8px; border: 0; cursor: pointer;
+  background: var(--vurgu); color: var(--vurgu-yazi); min-height: 44px;
+}
+button:disabled { opacity: .55; cursor: not-allowed; }
+button.ikincil { background: #e6e9ed; color: var(--yazi); }
+button.kucuk { min-height: 36px; padding: 6px 10px; font-size: .85rem; margin-top: 6px; }
+button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+
+.acil-sira { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.acil {
+  background: var(--acil); color: #fff; flex: 1 1 220px; min-height: 56px; font-size: 1.15rem;
+  letter-spacing: .04em; box-shadow: 0 3px 0 #7a0000;
+}
+.acil[aria-pressed="true"] { background: #7a0000; box-shadow: none; transform: translateY(2px); }
+.acil-bilgi { margin: 10px 0 0; padding: 10px; border: 2px solid var(--acil); border-radius: 8px; color: var(--acil); font-weight: 700; }
+
+#komutGirdi {
+  width: 100%; font: inherit; padding: 10px 12px; border: 1px solid #aab4be; border-radius: 8px; min-height: 44px;
+}
+#komutGirdi:disabled { background: #eee; }
+.dugme-sira { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.dugme-sira button { flex: 1 1 130px; }
+.ses-durum { margin: 8px 0 0; font-size: .9rem; color: var(--soluk); min-height: 1.2em; }
+.ses-durum.hata { color: var(--hata); }
+.oneriler { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.oneriler button {
+  background: #eef1f5; color: var(--yazi); font-weight: 500; font-size: .85rem; min-height: 36px; padding: 4px 10px;
+}
+
+.plan, .gunluk { margin: 0; padding-left: 22px; font-size: .9rem; }
+.plan { max-height: 180px; overflow: auto; }
+.plan li { padding: 2px 0; color: var(--soluk); }
+.plan li code { font-size: .8rem; background: #eef1f5; padding: 1px 5px; border-radius: 4px; }
+.plan li.calisiyor { color: var(--yazi); font-weight: 700; }
+.plan li.tamam { color: var(--basari); }
+.plan li.hata { color: var(--hata); font-weight: 700; }
+.plan li.bos { list-style: none; margin-left: -22px; }
+.gunluk { max-height: 240px; overflow: auto; }
+.gunluk li { padding: 2px 0; }
+.gunluk li.adim { font-weight: 700; margin-top: 4px; }
+.gunluk li.basari { color: var(--basari); }
+.gunluk li.hata { color: var(--hata); }
+
+.ayar { margin-bottom: 12px; }
+.ayar label { display: block; font-weight: 600; margin-bottom: 4px; }
+.ayar input[type=range] { width: 100%; min-height: 32px; }
+.not { margin: 4px 0 0; font-size: .85rem; color: var(--soluk); }
+.grafik { width: 100%; height: auto; aspect-ratio: 520 / 210; display: block; }
+
+details.kart summary { cursor: pointer; font-weight: 700; }
+.tablo { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: 8px; }
+.tablo th, .tablo td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--cizgi); vertical-align: top; }
+.beceri-liste { padding-left: 18px; font-size: .85rem; }
+.beceri-liste code { background: #eef1f5; padding: 1px 5px; border-radius: 4px; }
+.alt-bilgi { text-align: center; color: var(--soluk); font-size: .85rem; padding: 4px 16px 20px; }

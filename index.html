@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot Ev Oyunu</title>
+  <meta name="description" content="Engelli ve yaşlı kişilere ev işlerinde yardım eden robotun yapay zekâsını deneyen tarayıcı oyunu.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="ust">
+    <h1>Robot Ev Oyunu</h1>
+    <p class="alt">Engelli ve yaşlı kişilere ev işlerinde yardım eden robot — TÜBİTAK / TEKNOFEST projesi</p>
+    <p id="takimSatiri" class="takim" role="status">Takım kaydı: yükleniyor…</p>
+  </header>
+
+  <main class="duzen">
+    <section class="sahne-kutu" aria-label="Ev planı">
+      <div class="sahne-sarmal">
+        <canvas id="sahne" aria-label="Kuş bakışı ev: robot turuncu, sen mavi daire"></canvas>
+      </div>
+      <p class="ipucu">Mavi daire sensin. Haritada boş bir yere tıklayarak yerini değiştirebilirsin (robot çalışırken değil).
+        Küçük koyu nokta şişenin kapağının sıkı olduğunu, boş nokta açık olduğunu gösterir.</p>
+      <div class="acil-sira">
+        <button id="acilBtn" class="acil" type="button" aria-pressed="false">ACİL DURDUR</button>
+        <button id="sifirlaBtn" class="ikincil" type="button">Evi sıfırla</button>
+      </div>
+      <p id="acilBilgi" class="acil-bilgi" role="alert" hidden>
+        ACİL DURDURMA AÇIK. Robot ve plan durdu; komut almıyor. Devam etmek için kırmızı düğmeye tekrar bas.
+      </p>
+    </section>
+
+    <aside class="yan">
+      <section class="kart" aria-labelledby="komutBaslik">
+        <h2 id="komutBaslik">Komut ver</h2>
+        <form id="komutForm" autocomplete="off">
+          <label for="komutGirdi" class="gizli">Robota komut</label>
+          <input id="komutGirdi" type="text" placeholder='Örn: havluyu getir ve banyonun ışığını kapat' maxlength="200">
+          <div class="dugme-sira">
+            <button type="submit" id="gonderBtn">Gönder</button>
+            <button type="button" id="sesBtn" class="ikincil">🎤 Sesle söyle</button>
+          </div>
+        </form>
+        <p id="sesDurum" class="ses-durum" role="status"></p>
+        <div class="oneriler" id="oneriler" aria-label="Örnek komutlar"></div>
+      </section>
+
+      <section class="kart" aria-labelledby="planBaslik">
+        <h2 id="planBaslik">Plan (beceri adımları)</h2>
+        <ol id="planListesi" class="plan"><li class="bos">Henüz plan yok.</li></ol>
+      </section>
+
+      <section class="kart" aria-labelledby="gunlukBaslik">
+        <h2 id="gunlukBaslik">Günlük</h2>
+        <ol id="gunluk" class="gunluk" aria-live="polite"></ol>
+      </section>
+
+      <section class="kart" aria-labelledby="ayarBaslik">
+        <h2 id="ayarBaslik">Ayarlar</h2>
+        <div class="ayar">
+          <label for="ayarTork">Robotun kavrama torku: <output id="ayarTorkDeger"></output> N·m</label>
+          <input id="ayarTork" type="range">
+          <p class="not" id="torkNot"></p>
+        </div>
+        <div class="ayar">
+          <label for="ayarHata">Tutma / ölçüm hatası: <output id="ayarHataDeger"></output> %</label>
+          <input id="ayarHata" type="range">
+        </div>
+        <div class="ayar">
+          <label for="ayarHiz">Oyun hızı: <output id="ayarHizDeger"></output>×</label>
+          <input id="ayarHiz" type="range">
+        </div>
+      </section>
+
+      <section class="kart" aria-labelledby="grafikBaslik">
+        <h2 id="grafikBaslik">Gelişim grafiği</h2>
+        <canvas id="grafik" class="grafik" aria-describedby="grafikOzet"></canvas>
+        <p id="grafikOzet" class="not"></p>
+        <button id="kayitSilBtn" class="ikincil kucuk" type="button">Bu tarayıcıdaki kayıtları sil</button>
+      </section>
+
+      <details class="kart">
+        <summary>Varsayımlar (gerçek ölçümle değişecek)</summary>
+        <table class="tablo" id="varsayimTablo"></table>
+      </details>
+
+      <details class="kart">
+        <summary>Beceri arayüzü (gerçek robota bağlanacak katman)</summary>
+        <ul class="beceri-liste" id="beceriListe"></ul>
+      </details>
+    </aside>
+  </main>
+
+  <footer class="alt-bilgi">
+    <p>Oyuncu kodu: <code id="oyuncuKodu"></code> (rastgele; kişisel bilgi içermez)</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="js/sabitler.js"></script>
+  <script src="js/yolbul.js"></script>
+  <script src="js/dunya.js"></script>
+  <script src="js/anlayici.js"></script>
+  <script src="js/planlayici.js"></script>
+  <script src="js/beceriler.js"></script>
+  <script src="js/surucu_sim.js"></script>
+  <script src="js/yurutucu.js"></script>
+  <script src="js/depo.js"></script>
+  <script src="js/takim.js"></script>
+  <script src="js/grafik.js"></script>
+  <script src="js/ses.js"></script>
+  <script src="js/cizim.js"></script>
+  <script src="js/oyun.js"></script>
+</body>
+</html>
