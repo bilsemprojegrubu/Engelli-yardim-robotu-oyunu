@@ -155,10 +155,18 @@
       return yuru(o, h.hucreler, false);
     });
 
-  tanimla('eslikEt', 'Kullanıcıyı yanında götürerek odanın ortasına gider.',
-    { hedefOda: { tur: 'metin', zorunlu: true, aciklama: 'salon | mutfak | yatak | banyo' } },
+  tanimla('eslikEt', 'Kullanıcıyı yanında götürerek odanın ortasına ya da verilen hedefin yanına gider.',
+    { hedefOda: { tur: 'metin', zorunlu: false, aciklama: 'salon | mutfak | yatak | banyo' },
+      hedef: { tur: 'nesne', zorunlu: false, aciklama: 'git becerisindeki hedef tanımı (ör. {tur:"aygit", aygit:"kuvet"})' } },
     async function (girdi, o) {
       var g = o.surucu.algi();
+      if (girdi.hedef) {
+        var h = hedefHucreleri(g, girdi.hedef);
+        if (h.hata) return { basari: false, neden: h.hata };
+        if (!h.hucreler.length) return { basari: false, neden: 'Hedefin yanında durulacak yer yok.' };
+        return yuru(o, h.hucreler, true);
+      }
+      if (!girdi.hedefOda) return { basari: false, neden: 'Nereye götüreceğim belirtilmedi.' };
       var m = Dunya.odaMerkezi(g, girdi.hedefOda);
       if (!m) return { basari: false, neden: 'Odada boş yer yok.' };
       return yuru(o, [m], true);

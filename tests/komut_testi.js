@@ -51,6 +51,21 @@ var TESTLER = [
   ['beni salona götür',                       [{ tur: 'gotur', hedefOda: 'salon' }]],
   ['beni yatak odasına götürür müsün',        [{ tur: 'gotur', hedefOda: 'yatak' }]],
   ['beni mutfağa götür',                      [{ tur: 'gotur', hedefOda: 'mutfak' }]],
+  ['beni küvete götür',                       [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'kuvet' } }]],
+  ['beni duşa götür',                         [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'kuvet' } }]],
+  ['beni kanepeye götür',                     [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'kanepe' } }]],
+  ['beni koltuğa götür',                      [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'kanepe' } }]],
+  ['beni masaya götür',                       [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'masa' } }]],
+  ['beni tuvalete götür',                     [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'klozet' } }]],
+  ['beni lavaboya götür',                     [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'lavabo' } }]],
+  ['beni televizyona götür',                  [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'tv' } }]],
+  ['beni buzdolabına götür',                  [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'buzdolabi' } }]],
+  ['beni kumandaya götür',                    [{ tur: 'gotur', hedefYer: { tip: 'esya', id: 'kumanda' } }]],
+  ['beni havluluğa götür',                    [{ tur: 'gotur', hedefYer: { tip: 'aygit', id: 'havluluk' } }]],
+  ['küvete git',                              [{ tur: 'git', yer: { tip: 'aygit', id: 'kuvet' } }]],
+  ['kumandaya git',                           [{ tur: 'git', yer: { tip: 'esya', id: 'kumanda' } }]],
+  ['mutfaktaki masaya git',                   [{ tur: 'git', yer: { tip: 'aygit', id: 'masa' } }]],
+  ['su getir ve beni küvete götür',           [{ tur: 'getir', esya: 'su' }, { tur: 'gotur', hedefYer: { tip: 'aygit', id: 'kuvet' } }]],
   ['buzdolabını aç',                          [{ tur: 'buzdolabiAc' }]],
   ['buzdolabının kapısını aç',                [{ tur: 'buzdolabiAc' }]],
   ['buz dolabını açar mısın',                 [{ tur: 'buzdolabiAc' }]],
@@ -97,7 +112,8 @@ var DUR = ['dur', 'acil dur', 'durdur', 'iptal'];
 var gecen = 0, kalan = [];
 
 function uyusuyor(gercek, beklenen) {
-  return Object.keys(beklenen).every(function (k) { return gercek[k] === beklenen[k]; });
+  // İç içe nesneler (hedefYer, yer) de karşılaştırılsın
+  return Object.keys(beklenen).every(function (k) { return JSON.stringify(gercek[k]) === JSON.stringify(beklenen[k]); });
 }
 
 TESTLER.forEach(function (t) {

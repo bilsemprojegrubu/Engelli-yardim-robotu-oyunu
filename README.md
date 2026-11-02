@@ -53,6 +53,8 @@ Komutu yazabilir ya da **🎤 Sesle söyle** düğmesine basıp söyleyebilirsin
 | `kapıyı kapat`, `banyo kapısını aç` | Kapıyı kapatır / açar |
 | `tekerlekli sandalyeyi getir` | Sandalyeyi sana getirir |
 | `beni salona götür` | Yanına gelir, seni salona götürür |
+| `beni küvete götür`, `beni masaya götür`, `kumandaya git` | Evdeki **her mobilyayı ve eşyayı** tanır (liste `js/dunya.js` içindeki `MOBILYALAR`'dan gelir); o şeyin yanına gider ya da seni götürür |
+| `kalem getir`, `bahçeye git` | Tanımadığı şeyi söyler ve bildiklerini sıralar |
 | `buzdolabını aç` | Tutacı tutar, **tekerlekle geri giderek** kapıyı açar |
 | `mutfağa git`, `bana gel` | Robotu gönderir / çağırır |
 | `tüm ışıkları kapat` | Bütün odaların ışığını kapatır |

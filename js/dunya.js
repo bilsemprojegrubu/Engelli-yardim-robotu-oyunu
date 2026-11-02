@@ -190,7 +190,7 @@
 
   var API = {
     GENISLIK: GENISLIK, YUKSEKLIK: YUKSEKLIK,
-    ODALAR: ODALAR, ODA_ADLARI: ODA_ADLARI,
+    ODALAR: ODALAR, ODA_ADLARI: ODA_ADLARI, MOBILYALAR: MOBILYALAR,
     kur: kur, yeniKapakTorku: yeniKapakTorku,
     hucre: hucre, merkez: merkez, icerde: icerde, yurunebilir: yurunebilir,
     kapiBul: kapiBul, odaBul: odaBul, odaMerkezi: odaMerkezi,

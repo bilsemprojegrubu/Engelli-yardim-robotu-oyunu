@@ -61,6 +61,35 @@ test('su şişesi getirilir ve kullanıcının yanına bırakılır', async func
   assert.ok(/Kapı kapalı, açıyorum/.test(metin(o)), 'robot kapalı kapıyı kendisi açmalı');
 });
 
+// ---------- Herhangi bir yere götürme / gitme ----------
+function yakin(a, hucreler, mesafe) {
+  var h = Dunya.hucre(a);
+  return hucreler.some(function (c) { return Math.abs(c.x - h.x) + Math.abs(c.y - h.y) <= mesafe; });
+}
+test('beni küvete götür: robot ve kullanıcı küvetin yanına gelir', async function () {
+  var o = kur({ kavramaTorku: 6, hataYuzdesi: 0 }, 3, 'acik');
+  await o.calistir('beni küvete götür');
+  assert.strictEqual(o.kayitlar.length, 1);
+  assert.strictEqual(o.kayitlar[0].basari, true, metin(o));
+  var kuvet = Dunya.aygitHucreleri(o.d, 'kuvet');
+  assert.ok(yakin(o.d.robot, kuvet, 2), 'robot küvetin yanında olmalı');
+  assert.ok(yakin(o.d.kullanici, kuvet, 3), 'kullanıcı küvetin yakınında olmalı');
+});
+test('kumandaya git: robot kumandanın yanına gider', async function () {
+  var o = kur({ kavramaTorku: 6, hataYuzdesi: 0 }, 3, 'acik');
+  await o.calistir('mutfağa git');
+  await o.calistir('kumandaya git');
+  assert.strictEqual(o.kayitlar[1].basari, true, metin(o));
+  assert.ok(yakin(o.d.robot, [Dunya.esyaHucresi(o.d, 'kumanda')], 2), 'robot kumandanın yanında olmalı');
+});
+test('bilinmeyen yer ya da eşya: görev yok, bilinenler söylenir', async function () {
+  var o = kur({}, 3, 'acik');
+  await o.calistir('beni bahçeye götür');
+  await o.calistir('kalem getir');
+  assert.strictEqual(o.kayitlar.length, 0);
+  assert.ok(/küvet/.test(metin(o)) && /havlu/.test(metin(o)), metin(o));
+});
+
 test('havluyu getir ve banyonun ışığını kapat: iki görev, iki kayıt', async function () {
   var o = kur({ kavramaTorku: 6, hataYuzdesi: 0 }, 5, 'kapali');
   await o.calistir('havluyu getir ve banyonun ışığını kapat');
