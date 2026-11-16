@@ -31,3 +31,7 @@ Kaynak: ekibin TASIMA_NOTU_TAM.md dosyası ve çizimleri. Ölçüler **varsayım
 - Amaç: simülasyonda hiç devrilmediği için gerçekte de devrilmeyeceğini sanıp yapamayacağı işe kalkışmasın. Bu yüzden eğitimde sınırın dışına çıkma denemeleri de olacak ve robot "bunu yapamam" demeyi öğrenecek.
 - Sahibi "şu masayı it" dediğinde robot önce kendi sınırına bakar: nesne çok ağırsa, zemin kaygansa, devrilme riski varsa **reddeder ve nedenini söyler**.
 - Gerçek sınır değerleri (devrilme açısı, itme kuvveti, kol yükü) simülasyonda varsayımdır; gerçek robotta ölçülüp güncellenecek. Robot kendi ölçümlerini (eğim sensörü, motor akımı) sınırı kontrol etmek için kullanır.
+
+## Simülasyondaki durum (Eğitim Laboratuvarı)
+- Öğrenildi: hedefe gitme, evi tarama, kapak açma (ve "açamıyorum" deme), eşya itme ile güç/devrilme sınırı ("yapamam" deme), kumanda getirme ve "şişeyi aç ve getir" zincirleri.
+- Sırada: buzdolabı açma (geri giderek), tekerlekli sandalye itme, ayağa kalkarken destek.
