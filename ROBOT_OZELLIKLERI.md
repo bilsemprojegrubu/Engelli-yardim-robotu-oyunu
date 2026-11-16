@@ -13,10 +13,14 @@ Kaynak: ekibin TASIMA_NOTU_TAM.md dosyası ve çizimleri. Ölçüler **varsayım
 ## Özellikler
 1. **Şişe kapağı açma (ana iş):** bir el şişenin gövdesini sabit tutar, öbür el kayışla kapağı çevirir; açıp sahibine verir.
 2. **Kendine destek:** kişi ayağa kalkarken tutunup güç alabilsin diye robot sabit durur (tekerlekler kilitli).
+   - **İlk modelde yapılmayacak, sonra eklenecek (ekip kararı).**
    - Güvenlik uyarısı: ekip notunda "yürümeye destek" riskli bulunup kapsam dışı bırakılmıştı. Ayağa kalkmaya destek de benzer risk taşır. Önce yalnızca duran, kilitli robot + tutunma kolu olarak ve uzman görüşüyle düşünülmeli; ilk sürümde değil.
 3. **Önden kapı açma.**
 4. **Buzdolabı açma:** tutacı tutar, tekerlekle geri giderek açar (kapı yay çizdiği için giderken hafif döner).
 5. **Televizyon kumandasını getirme** (TV/ışık kontrolü de var).
+6. **Tekerlekli sandalyeyi itme (sonra eklenecek, ilk modelde yok):** kişi sandalyedeyken robot onu salondan mutfağa, mutfaktan yatak odasına götürür. Kucağına almaz; sadece iter.
+   - Robot kamera ve sensörlerle ortama bakar; ne kadar kuvvetle iteceğini (tork) öğrenir. Eğitimde kişi/sandalye ağırlığı, zemin eğimi, eşik, halı, engel rastgele değişir.
+   - Güvenlik uyarısı: ekip notunda "sandalye getirme/itme" insan ağırlığı ve devrilme riski yüzünden yapılmayacaklar arasındaydı. Şimdi ekip kararıyla sonraki aşamaya alındı. Başlamadan önce: çok düşük hız, eşik/rampa sınırı, devrilme ve fren hesabı, kişi olmadan test, acil durdurma, uzman görüşü gerekir.
 
 ## Her zaman geçerli kurallar
 - Acil durdurma her şeyden önce gelir; yapay zekâdan bağımsız çalışır.
