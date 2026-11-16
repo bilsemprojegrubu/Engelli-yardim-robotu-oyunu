@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot Eğitim Laboratuvarı</title>
+  <meta name="description" content="Robotun yapay zekâsı simülasyonda binlerce deneme yaparak öğrenir; canlı izleyip denetleyebilirsin.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="egitim.css">
+</head>
+<body>
+  <header class="ust">
+    <h1>Robot Eğitim Laboratuvarı</h1>
+    <p class="alt">Robot kural değil, <strong>deneyerek</strong> öğrenir: simülasyonda binlerce deneme, ödül ve ceza. —
+      <a href="index.html">← Robot Ev Oyunu'na dön</a></p>
+  </header>
+
+  <main class="egitim-duzen">
+    <section class="kart" aria-labelledby="denetimBaslik">
+      <h2 id="denetimBaslik">Canlı denetim</h2>
+      <p class="soluk">Eğitim arka planda ekran çizmeden çok hızlı koşar. Burada ise <strong>şu anki beynin</strong> yeni, rastgele
+        bir evde (başlangıç, hedef, kapılar ve engeller her seferinde farklı) ne yaptığını adım adım izlersin.</p>
+      <div class="canli-sira">
+        <label>Görev
+          <select id="canliMod">
+            <option value="karisik">Karışık</option>
+            <option value="git">Hedefe git</option>
+            <option value="tara">Evi tara (süpürge)</option>
+          </select>
+        </label>
+        <label>İzleme hızı <input id="canliHiz" type="range" min="1" max="40" value="8"> <output id="canliHizDeger">8</output> adım/sn</label>
+        <button id="yeniBolum" class="ikincil" type="button">Yeni bölüm</button>
+      </div>
+      <div class="paneller">
+        <figure><figcaption>Gerçek ev (denetçi görünümü)</figcaption><canvas id="gercekCv" aria-label="Gerçek ev"></canvas></figure>
+        <figure><figcaption>Robotun kafasındaki harita</figcaption><canvas id="hafizaCv" aria-label="Robotun öğrendiği harita"></canvas></figure>
+      </div>
+      <div class="canli-bilgi" aria-live="off">
+        <div id="canliOzet" class="ozet">Hazırlanıyor…</div>
+        <div id="kararCubuk" class="karar" aria-label="Robotun kararı: yön olasılıkları"></div>
+        <div id="yerListe" class="yerler"></div>
+      </div>
+    </section>
+
+    <aside class="yan">
+      <section class="kart" aria-labelledby="egitBaslik">
+        <h2 id="egitBaslik">Eğitim</h2>
+        <div class="sayac-sira">
+          <div><span id="sNesil" class="buyuk">0</span><small>nesil</small></div>
+          <div><span id="sDeneme" class="buyuk">0</span><small>deneme</small></div>
+          <div><span id="sGit" class="buyuk">–</span><small>hedefe gitme başarısı</small></div>
+          <div><span id="sTara" class="buyuk">–</span><small>ev tarama kapsamı</small></div>
+        </div>
+        <canvas id="egriCv" aria-label="Öğrenme eğrisi: ortalama ödül ve başarı"></canvas>
+        <p class="soluk kucuk"><span class="nokta ndr"></span> ortalama ödül &nbsp; <span class="nokta nbs"></span> hedefe gitme başarısı</p>
+        <div class="acil-sira">
+          <button id="egitBtn" class="birincil" type="button">▶ Eğitimi başlat</button>
+          <button id="sifirBtn" class="ikincil" type="button">Yeni (boş) beyin</button>
+        </div>
+        <p class="soluk kucuk">Boş beyin başta rastgele davranır, çarpar, döner durur. Nesil arttıkça düzelir.</p>
+      </section>
+
+      <section class="kart" aria-labelledby="ayarBaslik">
+        <h2 id="ayarBaslik">Rastgelelik ve gerçeklik farkı</h2>
+        <label class="ayar">Karar rastgeleliği (canlı izlemede): <output id="sicDeger">0,3</output>
+          <input id="sicaklik" type="range" min="0" max="1" step="0.05" value="0.3"></label>
+        <p class="soluk kucuk">0 = hep en iyi gördüğü hareket. Yükseldikçe robot her seferinde biraz farklı düşünür.</p>
+        <label class="ayar">Zemin kayması (gerçekte robotun hareketi sapar): <output id="kaymaDeger">0</output>%
+          <input id="kayma" type="range" min="0" max="40" step="1" value="0"></label>
+        <button id="uyumBtn" class="ikincil" type="button">Gerçeğe uyum dene (kayma %30 + sensör gürültüsü)</button>
+        <p id="uyumSonuc" class="soluk kucuk" role="status">Öğrenilmiş beyin yeni koşullarda birkaç denemeyle kendini ayarlar.</p>
+      </section>
+
+      <section class="kart" aria-labelledby="beyinBaslik">
+        <h2 id="beyinBaslik">Beyin dosyası</h2>
+        <div class="acil-sira">
+          <button id="indirBtn" class="ikincil" type="button">Beyni indir</button>
+          <label class="dosya-btn ikincil">Beyni yükle<input id="yukleGirdi" type="file" accept="application/json" hidden></label>
+        </div>
+        <p class="soluk kucuk">Eğitim ilerledikçe beyin bu tarayıcıda otomatik saklanır.</p>
+      </section>
+
+      <section class="kart" aria-labelledby="gunBaslik">
+        <h2 id="gunBaslik">Eğitim günlüğü</h2>
+        <ol id="gunluk" class="gunluk-liste"></ol>
+      </section>
+    </aside>
+
+    <section class="kart tam" aria-labelledby="nasilBaslik">
+      <h2 id="nasilBaslik">Nasıl çalışıyor? (dürüst anlatım)</h2>
+      <ul class="nasil">
+        <li><strong>Öğrenen kısım:</strong> küçük bir sinir ağı (<span id="paramSayi">–</span> sayı). Her nesilde birçok farklı ağ rastgele evlerde denenir, ödülü yüksek olanlara doğru ağ güncellenir (evrim stratejisi). Kural yazılmadı.</li>
+        <li><strong>Ödül:</strong> hedefe yaklaşınca ve varınca artı; çarpınca, boşuna dönünce eksi. Taramada yeni görülen yer artı.</li>
+        <li><strong>Ezber yok:</strong> her denemede başlangıç, hedef, kapıların açık/kapalı hali ve engeller rastgele.</li>
+        <li><strong>Süpürge gibi tarama:</strong> robot evi başta bilmez; sensörüyle (duvarın ardını göremez) kendi haritasını çıkarır ve mobilyaların yerini ("mutfak = buzdolabının olduğu yer") öğrenir. Her bölümde harita sıfırdan başlar.</li>
+        <li><strong>Algı:</strong> ağın girdileri sensörler ve robotun kendi haritasından çıkardığı yön ipuçlarıdır (hangi yön hedefe/keşfedilmemiş yere yaklaştırır). Ağın işi bu bilgiyle çarpma, kapı, kayma ve gürültü varken doğru hareketi seçmeyi öğrenmektir.</li>
+        <li><strong>Sınır:</strong> bu basit bir ızgara simülasyonu. Mikrodak gibi dengede durma (fizik, ivme ölçer) ayrı bir görev olur ve sonraki adımdır. Gerçek robota aktarım için ayrıca gerçek testler gerekir.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="js/sabitler.js"></script>
+  <script src="js/yolbul.js"></script>
+  <script src="js/dunya.js"></script>
+  <script src="js/ogrenme.js"></script>
+  <script src="js/egitim_arayuz.js"></script>
+</body>
+</html>
