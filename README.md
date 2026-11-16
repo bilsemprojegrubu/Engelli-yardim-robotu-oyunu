@@ -243,6 +243,7 @@ Tarayıcı ve npm gerekmez, sadece Node.js:
 ```bash
 node tests/komut_testi.js     # 60+ Türkçe cümle: komut anlama
 node tests/senaryo_testi.js   # uçtan uca: kapak torku, buzdolabı yayı, acil durdurma, 300 rastgele komut
+node tests/ogrenme_testi.js   # pekiştirmeli öğrenme: robot gerçekten öğreniyor mu?
 node tests/takim_testi.js     # Supabase modülü (sahte fetch) + gizli anahtar kontrolü
 ```
 
@@ -272,3 +273,14 @@ node tests/takim_testi.js     # Supabase modülü (sahte fetch) + gizli anahtar 
 
 Oyun varsayılan olarak Three.js ile gerçek 3D açılır (sürükle: döndür, tekerlek/iki parmak: yakınlaştır, zemine tıkla: kendini taşı). "2D" düğmesi eski kuş bakışı görünüme döner; tarayıcıda WebGL yoksa 2D otomatik kalır.
 Three.js r128 ve OrbitControls (MIT lisanslı) `js/vendor/` altında depodadır, bu yüzden internetsiz de çalışır.
+
+## Eğitim Laboratuvarı (`egitim.html`)
+
+Robotun karar veren kısmı **kural değil, küçük bir sinir ağıdır** (`js/ogrenme.js`). Ağ, simülasyonda binlerce denemeyle ödül/ceza alarak öğrenir (evrim stratejisi, pekiştirmeli öğrenme). Hedefe gitmek ve evi süpürge gibi taramak iki görevdir.
+
+- **Ezber yok:** her bölümde başlangıç, hedef, kapı durumu ve engeller rastgele; zemin kayması ve sensör gürültüsü de rastgeleleştirilir.
+- **Süpürge gibi tarama:** robot evi başta bilmez; ışın sensörüyle (duvar ardını göremez) kendi haritasını çıkarır, mobilyaların ve odaların yerini öğrenir. Her bölümde harita sıfırdan başlar.
+- **Canlı denetim:** eğitim çizimsiz hızlı koşar; sayfada güncel beynin yeni rastgele bir evde ne yaptığı, robotun kafasındaki harita ve karar olasılıkları adım adım izlenir. Beyin indirilip yüklenebilir.
+- **Gerçeğe uyum:** "Gerçeğe uyum dene", kayma/gürültü değişince beynin birkaç nesilde kendini ayarladığını gösterir.
+
+Dürüst sınırlar: girdilerin bir kısmı robotun kendi haritasından çıkan yön ipuçlarıdır (algı katmanı); ağ bunlarla çarpma, kapı, kayma ve gürültü varken karar vermeyi öğrenir. Simülasyon basit bir ızgaradır; Mikrodak gibi dengede durma (fizik, ivme ölçer) sonraki görevdir; gerçek robota aktarım ayrıca gerçek testle doğrulanmalıdır.
