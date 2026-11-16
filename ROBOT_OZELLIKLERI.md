@@ -25,3 +25,9 @@ Kaynak: ekibin TASIMA_NOTU_TAM.md dosyası ve çizimleri. Ölçüler **varsayım
 ## Her zaman geçerli kurallar
 - Acil durdurma her şeyden önce gelir; yapay zekâdan bağımsız çalışır.
 - Kol uzanıkken hareket yasak, hız sınırı, çarpışmada durma, riskli işte onay.
+
+## Sınırlar: robot kendini yıkılmaz sanmasın (ekip kararı, dipnot)
+- Simülasyonda robotun **devrilme sınırı** ve **güç sınırı** olacak. Devrilirse ya da gücünü aşarsa (çok ağır masa/sehpa itmek, kolu aşırı uzatıp yük almak, sandalyeyi eğimde itmek) eğitimde ağır ceza alır.
+- Amaç: simülasyonda hiç devrilmediği için gerçekte de devrilmeyeceğini sanıp yapamayacağı işe kalkışmasın. Bu yüzden eğitimde sınırın dışına çıkma denemeleri de olacak ve robot "bunu yapamam" demeyi öğrenecek.
+- Sahibi "şu masayı it" dediğinde robot önce kendi sınırına bakar: nesne çok ağırsa, zemin kaygansa, devrilme riski varsa **reddeder ve nedenini söyler**.
+- Gerçek sınır değerleri (devrilme açısı, itme kuvveti, kol yükü) simülasyonda varsayımdır; gerçek robotta ölçülüp güncellenecek. Robot kendi ölçümlerini (eğim sensörü, motor akımı) sınırı kontrol etmek için kullanır.
