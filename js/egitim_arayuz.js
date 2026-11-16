@@ -212,7 +212,9 @@
       ['Her adım, hedefe giderken (oyalanmasın)', A.adimGit], ['Her adım, tararken', A.adimTara],
       ['Duvara/engele çarptı', A.carpma], ['Kapalı kapıyı açtı (zaman alır)', A.kapiAcma],
       ['Geri gitti (arkasını göremez)', A.geri], ['Aynı kareye 3. kez ve sonra bastı', A.tekrar],
-      ['Az önce çıktığı kareye hemen döndü (ileri-geri)', A.salinim], ['Sola dönüp hemen sağa döndü (boşa dönüş)', A.bosaDonus]
+      ['Az önce çıktığı kareye hemen döndü (ileri-geri)', A.salinim], ['Sola dönüp hemen sağa döndü (boşa dönüş)', A.bosaDonus],
+      ['Aynı yöne 3. kez ve sonra üst üste döndü (yerinde fırıldak)', A.firildak],
+      ['25 adım aynı 1-2 karede takılı kaldı: durur, sahibine haber verir', A.takildiDur]
     ];
     var tb = $('odulTablo');
     satirlar.forEach(function (s) {
@@ -297,11 +299,11 @@
 
   function ozetYaz() {
     var b = bolum; if (!b) return;
-    var durum = b.bitti ? (b.basari ? '✔ başardı' : '✘ süre doldu') : 'çalışıyor';
-    var takildi = b.takilma() >= 1 ? ' · ⚠ takıldım, başka yol arıyorum' : '';
+    var durum = b.bitti ? (b.basari ? '✔ başardı' : b.durdu ? '✋ takıldım: durdum, sahibime haber veriyorum' : '✘ süre doldu') : 'çalışıyor';
+    var takildi = !b.bitti && b.takilma() >= 1 ? ' · ⚠ takılıyorum (' + b.takiliSure + '/15), başka yol arıyorum' : '';
     $('canliOzet').textContent = (b.mod === 'git' ? 'Görev: hedefe git (yeşil yıldız)' : 'Görev: evi tara (süpürge)') +
       ' · adım ' + b.adim + '/' + b.maksAdim + ' · ödül ' + virgul(b.toplam, 2) + ' · ' + durum +
-      (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + takildi;
+      (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + takildi;
     var kc = $('kararCubuk'); kc.textContent = '';
     for (var i = 0; i < 4; i++) {
       var p = sonOlas ? sonOlas[i] : 0, d = document.createElement('div'), cb = document.createElement('div'), ic = document.createElement('i');
@@ -346,6 +348,10 @@
   }
 
   sayaclar(); egriCiz(); yeniBolum(); ciz();
-  setTimeout(function () { degerlendirTest(); sayaclar(); }, 50);
+  setTimeout(function () {
+    degerlendirTest(); sayaclar();
+    if (kaynak !== 'Hazır eğitilmiş beyin' && sonTest.gitBasari < 0.5)
+      gunluk('Not: bu beyin henüz az eğitilmiş (hedefe gitme ' + yuzde(sonTest.gitBasari) + '). Takılabilir ya da yerinde dönebilir. Eğitime devam et ya da "Hazır eğitilmiş beyne dön"e bas.');
+  }, 50);
   window.requestAnimationFrame(dongu);
 })();

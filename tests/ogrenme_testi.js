@@ -31,6 +31,21 @@ test('Geri gitmek ve ileri-geri gidip gelmek ceza alır', function () {
   b.ilerle(0); var od = b.ilerle(1);
   assert.strictEqual(b.salinim, 1); assert.ok(od <= O.ODUL.geri + O.ODUL.salinim + 0.05, 'ödül ' + od);
 });
+test('Yerinde fırıldak gibi dönmek ceza alır, takılan robot durur', function () {
+  var b = new O.Bolum({ mod: 'git' }, O.tohum(12)), od = [];
+  while (!b.bitti) od.push(b.ilerle(3));
+  assert.ok(od[2] <= O.ODUL.adimGit + O.ODUL.firildak + 1e-9, 'üçüncü dönüş cezası ' + od[2]);
+  assert.ok(b.durdu && b.adim <= 30, 'durdu=' + b.durdu + ' adım ' + b.adim);
+});
+test('Hazır beyin olduğu yerde dönüp durmaz (300 deneme, rastgelelik 0,3)', function () {
+  var rng = O.tohum(4321), kotu = 0;
+  for (var i = 0; i < 300; i++) {
+    var b = new O.Bolum({ mod: i % 2 ? 'tara' : 'git' }, rng), a = new O.Ajan(HB.theta);
+    while (!b.bitti) b.ilerle(O.sec(a.karar(b.gozlem()), 0.3, rng));
+    if (b.durdu || b.firildakSayisi > 3) kotu++;
+  }
+  assert.ok(kotu <= 3, 'takılan/dönen deneme: ' + kotu);
+});
 test('Hafıza çalışır: aynı girdiye önceki adımlara göre farklı iç durum', function () {
   var w = O.yeniBeyin(O.tohum(9)), a = new O.Ajan(w), x = new Array(O.GIRIS).fill(0.3);
   var c1 = a.karar(x), c2 = a.karar(x);
