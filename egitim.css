@@ -46,3 +46,4 @@
 .tablo td.eksi { color: #b42318; font-weight: 600; }
 .nasil + h3, .tablo + h3 { margin-top: 14px; }
 .egitim-duzen .acil-sira { position: static; padding: 0; }
+.uyari { color: #b42318; font-weight: 600; }

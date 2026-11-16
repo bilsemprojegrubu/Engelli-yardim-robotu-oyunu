@@ -29,24 +29,44 @@
     while (ol.children.length > 60) ol.removeChild(ol.lastChild);
   }
 
-  // ---------- Kayıt ----------
+  // ---------- Kayıt (bu cihazdaki tarayıcıya) ----------
+  // Beyin her birkaç saniyede, duraklatınca, sekme gizlenince ve sayfa kapanırken kaydedilir.
+  var depolamaVar = (function () {
+    try { localStorage.setItem('robotDeneme', '1'); localStorage.removeItem('robotDeneme'); return true; } catch (e) { return false; }
+  })();
+  var sonKayitZamani = 0;
+  function kayitYaz(m, hata) { var el = $('kayitDurum'); el.textContent = m; el.className = 'kucuk ' + (hata ? 'uyari' : 'soluk'); }
   function kaydet() {
+    if (!egitici) return;
+    if (!depolamaVar) { kayitYaz('Bu tarayıcı kayıt tutmuyor (gizli sekme ya da uygulama içi tarayıcı olabilir). Eğittiğin beyni kaybetmemek için "Beyni indir"e bas.', true); return; }
     try {
-      localStorage.setItem(KAYIT, JSON.stringify({ surum: O.SURUM, theta: egitici.theta, nesil: egitici.nesil, gecmis: egitici.gecmis.slice(-400), deneme: denemeSayisi }));
-    } catch (e) { /* önemli değil */ }
+      localStorage.setItem(KAYIT, JSON.stringify({ surum: O.SURUM, theta: egitici.theta, nesil: egitici.nesil, gecmis: egitici.gecmis.slice(-400), deneme: denemeSayisi, kaynak: kaynak, zaman: Date.now() }));
+      sonKayitZamani = Date.now();
+      kayitYaz('Bu cihaza kaydedildi: ' + new Date().toLocaleTimeString('tr-TR') + ' (nesil ' + egitici.nesil + '). Sayfayı kapatıp açınca bu beyin gelir.');
+    } catch (e) {
+      kayitYaz('Kaydedilemedi (tarayıcı yer vermedi). "Beyni indir" ile dosya olarak sakla.', true);
+    }
   }
+  window.addEventListener('pagehide', kaydet);
+  window.addEventListener('beforeunload', kaydet);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') kaydet(); });
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* desteklenmiyor */ }
   function benimse(v, ad) {
-    egitici = yeniEgitici(v); denemeSayisi = v.deneme || 0; kaynak = ad;
-    $('kaynak').textContent = ad;
+    egitici = yeniEgitici(v); denemeSayisi = (v && v.deneme) || 0; kaynak = ad;
+    $('kaynak').textContent = ad + ' (' + egitici.nesil + ' nesil)';
   }
   function hazirYukle() {
-    if (beyinUygun(HB)) { benimse(HB, 'Hazır eğitilmiş beyin (' + HB.nesil + ' nesil)'); return true; }
-    egitici = yeniEgitici(); kaynak = 'Boş beyin'; $('kaynak').textContent = kaynak; return false;
+    if (beyinUygun(HB)) { benimse(HB, 'Hazır eğitilmiş beyin'); return true; }
+    benimse(null, 'Boş beyin'); return false;
   }
   (function ilkYukleme() {
     try {
       var k = localStorage.getItem(KAYIT);
-      if (k) { var v = JSON.parse(k); if (beyinUygun(v)) { benimse(v, 'Bu tarayıcıda eğitilmeye devam eden beyin (' + v.nesil + ' nesil)'); gunluk('Bu tarayıcıdaki beyin yüklendi (nesil ' + v.nesil + ').'); return; } }
+      if (k) { var v = JSON.parse(k); if (beyinUygun(v)) {
+          benimse(v, v.kaynak || 'Senin eğittiğin beyin');
+          kayitYaz('Bu cihazda kayıtlı beyin yüklendi' + (v.zaman ? ' (son kayıt: ' + new Date(v.zaman).toLocaleString('tr-TR') + ')' : '') + '.');
+          gunluk('Bu cihazda kayıtlı beyin yüklendi: ' + kaynak + ' (nesil ' + v.nesil + ').'); return;
+        } }
     } catch (e) { /* yok */ }
     if (hazirYukle()) gunluk('Hazır eğitilmiş beyin yüklendi: robot ilk açılışta da bilgili.');
     else gunluk('Hazır beyin bulunamadı; boş beyinle başlandı.');
@@ -55,6 +75,7 @@
   // ---------- Sayaçlar ve eğri ----------
   function sayaclar() {
     $('sNesil').textContent = egitici.nesil;
+    if (kaynak) $('kaynak').textContent = kaynak + ' (' + egitici.nesil + ' nesil)';
     $('sDeneme').textContent = denemeSayisi.toLocaleString('tr-TR');
     $('sGit').textContent = sonTest.gitBasari === null ? '–' : yuzde(sonTest.gitBasari);
     $('sTara').textContent = sonTest.taraKapsama === null ? '–' : yuzde(sonTest.taraKapsama);
@@ -99,10 +120,10 @@
       denemeSayisi += egitici.cift * 2 * egitici.K;
     } while (performance.now() - t0 < 40);
     if (Math.floor(egitici.nesil / 5) !== Math.floor(n0 / 5)) degerlendirTest();
+    if (Date.now() - sonKayitZamani > 3000) kaydet();
     if (Math.floor(egitici.nesil / 10) !== Math.floor(n0 / 10)) {
       gunluk('Nesil ' + egitici.nesil + ': ortalama ödül ' + virgul(son.ortOdul, 2) + ', hedefe gitme ' + yuzde(sonTest.gitBasari) +
         ', tarama ' + yuzde(sonTest.taraKapsama) + ', ileri-geri ' + virgul(sonTest.ortSalinim, 1) + '/bölüm');
-      kaydet();
     }
     sayaclar(); egriCiz();
     setTimeout(tik, 0);
@@ -111,12 +132,15 @@
     egitiyor = !egitiyor;
     this.textContent = egitiyor ? '⏸ Duraklat' : '▶ Eğitime devam et';
     this.setAttribute('aria-pressed', String(egitiyor));
-    if (egitiyor) { gunluk('Eğitim başladı.'); tik(); } else { kaydet(); gunluk('Eğitim duraklatıldı (nesil ' + egitici.nesil + ').'); }
+    if (egitiyor) {
+      kaynak = 'Senin eğittiğin beyin';
+      gunluk('Eğitim başladı.'); tik();
+    } else { kaydet(); gunluk('Eğitim duraklatıldı (nesil ' + egitici.nesil + ').'); }
   });
   function durdur() { if (egitiyor) $('egitBtn').click(); }
   $('sifirBtn').addEventListener('click', function () {
     durdur();
-    egitici = yeniEgitici(); denemeSayisi = 0; kaynak = 'Boş beyin (sıfırdan)'; $('kaynak').textContent = kaynak;
+    benimse(null, 'Boş beyin (sıfırdan)');
     gunluk('Yeni, boş beyin oluşturuldu: robot hiçbir şey bilmiyor, rastgele davranır. Eğitimi başlatınca öğrenir.');
     kaydet(); degerlendirTest(); sayaclar(); egriCiz(); yeniBolum();
   });
@@ -164,7 +188,7 @@
     r.onload = function () {
       try {
         var v = JSON.parse(r.result);
-        if (beyinUygun(v)) { durdur(); benimse(v, 'Dosyadan yüklenen beyin (' + (v.nesil || 0) + ' nesil)'); gunluk('Beyin dosyası yüklendi.'); kaydet(); degerlendirTest(); sayaclar(); egriCiz(); yeniBolum(); }
+        if (beyinUygun(v)) { durdur(); benimse(v, 'Dosyadan yüklenen beyin'); gunluk('Beyin dosyası yüklendi.'); kaydet(); degerlendirTest(); sayaclar(); egriCiz(); yeniBolum(); }
         else gunluk('Bu dosya bu sürümün beyin biçimine uymuyor (eski sürümün beyni olabilir).');
       } catch (e) { gunluk('Dosya okunamadı.'); }
     };
