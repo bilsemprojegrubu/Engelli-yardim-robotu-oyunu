@@ -19,7 +19,8 @@
     <section class="kart" aria-labelledby="denetimBaslik">
       <h2 id="denetimBaslik">Canlı denetim</h2>
       <p class="soluk">Eğitim arka planda ekran çizmeden çok hızlı koşar. Burada ise <strong>şu anki beynin</strong> yeni, rastgele
-        bir evde (başlangıç, hedef, kapılar ve engeller her seferinde farklı) ne yaptığını adım adım izlersin.</p>
+        bir evde (başlangıç, yön, hedef, kapılar ve engeller her seferinde farklı) ne yaptığını adım adım izlersin.
+        Robot gerçek robot gibi hareket eder: <strong>ileri, geri, sola dön, sağa dön</strong>. Turuncu yelpaze kafadaki kameranın gördüğü yer.</p>
       <div class="canli-sira">
         <label>Görev
           <select id="canliMod">
@@ -37,7 +38,9 @@
       </div>
       <div class="canli-bilgi" aria-live="off">
         <div id="canliOzet" class="ozet">Hazırlanıyor…</div>
-        <div id="kararCubuk" class="karar" aria-label="Robotun kararı: yön olasılıkları"></div>
+        <div id="kararCubuk" class="karar" aria-label="Robotun kararı: hareket olasılıkları"></div>
+        <div class="hafiza-sira"><span class="soluk kucuk">Hafıza (<span id="gizliSayi">16</span> hücre; mavi +, turuncu −):</span>
+          <div id="hafizaCubuk" class="hafiza" aria-label="Robotun kısa hafızası"></div></div>
         <div id="yerListe" class="yerler"></div>
       </div>
     </section>
@@ -50,14 +53,20 @@
           <div><span id="sDeneme" class="buyuk">0</span><small>deneme</small></div>
           <div><span id="sGit" class="buyuk">–</span><small>hedefe gitme başarısı</small></div>
           <div><span id="sTara" class="buyuk">–</span><small>ev tarama kapsamı</small></div>
+          <div class="genis"><span id="sSal" class="buyuk">–</span><small>ileri-geri gidip gelme (bölüm başına, az olmalı)</small></div>
         </div>
+        <p class="kucuk">Şu anki beyin: <strong id="kaynak">–</strong></p>
         <canvas id="egriCv" aria-label="Öğrenme eğrisi: ortalama ödül ve başarı"></canvas>
         <p class="soluk kucuk"><span class="nokta ndr"></span> ortalama ödül &nbsp; <span class="nokta nbs"></span> hedefe gitme başarısı</p>
         <div class="acil-sira">
-          <button id="egitBtn" class="birincil" type="button">▶ Eğitimi başlat</button>
+          <button id="egitBtn" class="birincil" type="button">▶ Eğitime devam et</button>
+        </div>
+        <div class="acil-sira">
+          <button id="hazirBtn" class="ikincil" type="button">Hazır eğitilmiş beyne dön</button>
           <button id="sifirBtn" class="ikincil" type="button">Yeni (boş) beyin</button>
         </div>
-        <p class="soluk kucuk">Boş beyin başta rastgele davranır, çarpar, döner durur. Nesil arttıkça düzelir.</p>
+        <p class="soluk kucuk">Site, simülasyonda önceden eğitilmiş beyinle açılır. "Yeni (boş) beyin" ile sıfırdan öğrenmesini izleyebilirsin:
+          boş beyin başta rastgele davranır, çarpar, ileri-geri gider durur; nesil arttıkça düzelir.</p>
       </section>
 
       <section class="kart" aria-labelledby="ayarBaslik">
@@ -89,13 +98,32 @@
     <section class="kart tam" aria-labelledby="nasilBaslik">
       <h2 id="nasilBaslik">Nasıl çalışıyor? (dürüst anlatım)</h2>
       <ul class="nasil">
-        <li><strong>Öğrenen kısım:</strong> küçük bir sinir ağı (<span id="paramSayi">–</span> sayı). Her nesilde birçok farklı ağ rastgele evlerde denenir, ödülü yüksek olanlara doğru ağ güncellenir (evrim stratejisi). Kural yazılmadı.</li>
-        <li><strong>Ödül:</strong> hedefe yaklaşınca ve varınca artı; çarpınca, boşuna dönünce eksi. Taramada yeni görülen yer artı.</li>
-        <li><strong>Ezber yok:</strong> her denemede başlangıç, hedef, kapıların açık/kapalı hali ve engeller rastgele.</li>
-        <li><strong>Süpürge gibi tarama:</strong> robot evi başta bilmez; sensörüyle (duvarın ardını göremez) kendi haritasını çıkarır ve mobilyaların yerini ("mutfak = buzdolabının olduğu yer") öğrenir. Her bölümde harita sıfırdan başlar.</li>
-        <li><strong>Algı:</strong> ağın girdileri sensörler ve robotun kendi haritasından çıkardığı yön ipuçlarıdır (hangi yön hedefe/keşfedilmemiş yere yaklaştırır). Ağın işi bu bilgiyle çarpma, kapı, kayma ve gürültü varken doğru hareketi seçmeyi öğrenmektir.</li>
-        <li><strong>Sınır:</strong> bu basit bir ızgara simülasyonu. Mikrodak gibi dengede durma (fizik, ivme ölçer) ayrı bir görev olur ve sonraki adımdır. Gerçek robota aktarım için ayrıca gerçek testler gerekir.</li>
+        <li><strong>Öğrenen kısım:</strong> küçük, hafızalı bir sinir ağı (<span id="paramSayi">–</span> sayı). Her nesilde birçok farklı ağ rastgele evlerde denenir, puanı yüksek olanlara doğru ağ güncellenir (evrim stratejisi). Kural yazılmadı.</li>
+        <li><strong>Gerçek robota benzer hareket:</strong> iki motorlu tekerlek gibi ileri/geri gider, yerinde döner, yan yan gidemez. Kamera önde (yaklaşık 200°), arkasını göremez; her yanda yalnız 1 kare yakın algı (tampon) var.</li>
+        <li><strong>Hafıza:</strong> robot bir önceki adımdaki düşüncesini, son hareketini ve son 10 adımda takılıp takılmadığını bilir. Böylece "az önce buradan geldim" diyebilir.</li>
+        <li><strong>Ödül nedir?</strong> Sadece bir sayı, bir skor tabelası gibi. Robot bir şey hissetmez; eğitim, ağın ayarlarını puanı yükselten yöne kaydırır. Puanı yanlış yazarsak robot yanlış şeyi öğrenir; bu yüzden tablo aşağıda açıkça duruyor.</li>
+        <li><strong>Ezber yok:</strong> her denemede başlangıç, yön, hedef, kapıların açık/kapalı hali ve engeller rastgele; zemin kayması (tekerlek patinajı) ve sensör gürültüsü de rastgele.</li>
+        <li><strong>Süpürge gibi tarama:</strong> robot evi başta bilmez; kendi haritasını çıkarır ve mobilyaların yerini ("mutfak = buzdolabının olduğu yer") öğrenir. Her bölümde harita sıfırdan başlar.</li>
+        <li><strong>Algı:</strong> ağın girdileri sensörler ve robotun kendi haritasından çıkardığı yön ipuçlarıdır (hangi taraf hedefe/keşfedilmemiş yere yaklaştırır). Ağın işi bu bilgiyle çarpma, kapı, kayma ve gürültü varken doğru hareketi seçmektir.</li>
+        <li><strong>Sınır:</strong> basit bir ızgara simülasyonu; ölçüler ve ödül sayıları varsayım. Gerçek robota aktarım için ayrıca gerçek testler gerekir.</li>
       </ul>
+
+      <h3>Robot neye puan alıyor? (koddaki sayıların aynısı)</h3>
+      <table class="tablo"><thead><tr><th>Durum</th><th>Puan</th></tr></thead><tbody id="odulTablo"></tbody></table>
+
+      <h3>Görevler ve özellikler</h3>
+      <p class="soluk kucuk">Hedef: bütün görevler simülasyonda önceden öğrenilmiş olsun; bir özellik gerçek robota eklenince yeniden eğitim gerekmeden kullanıma açılsın. Gerçekte açmadan önce yine kişisiz test ve güvenlik denemesi gerekir.</p>
+      <table class="tablo"><thead><tr><th>Görev</th><th>Simülasyonda</th><th>Gerçekte</th></tr></thead><tbody>
+        <tr><td>Hedefe gitme (ileri/geri/dönüş)</td><td class="arti">Öğrenildi</td><td>İlk model</td></tr>
+        <tr><td>Evi tarama, odaları/mobilyaları öğrenme</td><td class="arti">Öğrenildi</td><td>İlk model</td></tr>
+        <tr><td>Şişe kapağı açma (bir el tutar, öbürü kayışla çevirir) ve sahibine verme</td><td>Sırada</td><td>İlk model (ana iş)</td></tr>
+        <tr><td>Önden kapı açma</td><td>Kısmen (kapalı kapıyı açıp geçer)</td><td>Sonra</td></tr>
+        <tr><td>Buzdolabı açma (tutacı tutar, tekerlekle geri giderek açar)</td><td>Sırada</td><td>Sonra</td></tr>
+        <tr><td>Televizyon kumandasını getirme</td><td>Sırada</td><td>İlk model</td></tr>
+        <tr><td>Devrilme ve güç sınırı: yapamayacağı işi ("bu masa çok ağır") reddetme</td><td>Sırada</td><td>Her zaman açık</td></tr>
+        <tr><td>Tekerlekli sandalyeyi itme (salon → mutfak → yatak odası)</td><td>Sırada</td><td class="eksi">Kapalı (sonra)</td></tr>
+        <tr><td>Ayağa kalkarken destek olma (robot kilitli durur)</td><td>Sırada</td><td class="eksi">Kapalı (sonra)</td></tr>
+      </tbody></table>
     </section>
   </main>
 
@@ -103,6 +131,7 @@
   <script src="js/yolbul.js"></script>
   <script src="js/dunya.js"></script>
   <script src="js/ogrenme.js"></script>
+  <script src="js/hazir_beyin.js"></script>
   <script src="js/egitim_arayuz.js"></script>
 </body>
 </html>
