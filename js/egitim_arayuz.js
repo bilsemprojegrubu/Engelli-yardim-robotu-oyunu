@@ -124,6 +124,9 @@
     if (Math.floor(egitici.nesil / 10) !== Math.floor(n0 / 10)) {
       gunluk('Nesil ' + egitici.nesil + ': ortalama ödül ' + virgul(son.ortOdul, 2) + ', hedefe gitme ' + yuzde(sonTest.gitBasari) +
         ', tarama ' + yuzde(sonTest.taraKapsama) + ', ileri-geri ' + virgul(sonTest.ortSalinim, 1) + '/bölüm');
+      var ilk = egitici.gecmis[Math.max(0, egitici.gecmis.length - 30)];
+      if (sonTest.gitBasari < 0.1 && ilk && son.ortOdul > ilk.ortOdul + 0.3)
+        gunluk('Dikkat: puan artıyor ama hedefe gitme hâlâ %' + Math.round(sonTest.gitBasari * 100) + '. Robot şimdilik "hareket etmezsem çarpmam" diye ceza kaçırmayı öğreniyor (ödül açığı). Eğitime devam edince genelde geçer.');
     }
     sayaclar(); egriCiz();
     setTimeout(tik, 0);
