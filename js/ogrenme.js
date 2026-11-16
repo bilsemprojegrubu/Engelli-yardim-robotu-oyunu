@@ -38,6 +38,8 @@
     tekrar: -0.01,        // aynı kareye 3. kez ve sonrası
     salinim: -0.03,       // az önce çıktığı kareye hemen geri dönmek (ileri-geri gidip gelme)
     bosaDonus: -0.01,     // sola dönüp hemen sağa dönmek (ya da tersi)
+    firildak: -0.02,      // aynı yöne 3. kez ve daha çok üst üste dönmek (yerinde fırıldak gibi dönme)
+    takildiDur: -0.5,     // 25 adım boyunca 1-2 karede takılı kaldı: robot durur, sahibine haber verir (başarısız)
     yaklasma: 0.06,       // hedefe 1 kare yaklaşınca (uzaklaşınca aynı kadar eksi)
     varis: 1,             // hedefe varınca
     yeniYer: 1.5          // taramada: yeni görülen alan oranı × bu
@@ -112,6 +114,7 @@
     this.maksAdim = secenek.maksAdim || (this.mod === 'git' ? 200 : 400);
     this.adim = 0; this.toplam = 0; this.bitti = false; this.basari = false;
     this.sonEylem = -1; this.sonOdul = 0; this.carpma = 0; this.salinim = 0; this.geriSayisi = 0;
+    this.donusSeri = 0; this.takiliSure = 0; this.durdu = false; this.firildakSayisi = 0;
     this.izler = [[this.x, this.y]]; this.sonKareler = [];
     this._gor();
   }
@@ -303,8 +306,10 @@
     var odul = this.mod === 'git' ? ODUL.adimGit : ODUL.adimTara;
     var onceki = this.mod === 'git' ? this.mesafe[this.y][this.x] : 0;
     var patinaj = this.kayma > 0 && this.rng() < this.kayma;     // zemin kaydı: tekerlek boşa döner
+    this.donusSeri = eylem >= 2 && eylem === oncekiEylem ? this.donusSeri + 1 : (eylem >= 2 ? 1 : 0);
     if (eylem >= 2) {
       if ((eylem === 2 && oncekiEylem === 3) || (eylem === 3 && oncekiEylem === 2)) odul += ODUL.bosaDonus;
+      if (this.donusSeri >= 3) { odul += ODUL.firildak; this.firildakSayisi++; }
       if (!patinaj) this.yon = (this.yon + (eylem === 2 ? 3 : 1)) % 4;
       else if (this.rng() < 0.5) this.yon = (this.yon + 2) % 4;     // fazla döndü (yarım tur)
     } else {
@@ -333,6 +338,9 @@
       odul += ODUL.yeniYer * yeni / Math.max(1, this.erisilebilir);
       if (this.kesfedilen >= this.erisilebilir * 0.97) { this.bitti = true; this.basari = true; }
     }
+    // Takılma: son 10 adımda hep aynı 1-2 kare ve bu 15 adım daha sürdüyse robot durur (gerçekte: sahibine haber verir)
+    this.takiliSure = this.takilma() >= 1 ? this.takiliSure + 1 : 0;
+    if (!this.bitti && this.takiliSure >= 15) { odul += ODUL.takildiDur; this.bitti = true; this.durdu = true; }
     if (this.adim >= this.maksAdim) this.bitti = true;
     this.sonOdul = odul; this.toplam += odul;
     return odul;
@@ -352,14 +360,14 @@
   // Bir beyni n rastgele bölümde sınar
   function degerlendir(beyin, n, secenek, tohumDeger) {
     var rng = tohum(tohumDeger === undefined ? 12345 : tohumDeger);
-    var s = { gn: 0, ok: 0, tn: 0, kaps: 0, odul: 0, sal: 0, carp: 0 };
+    var s = { gn: 0, ok: 0, tn: 0, kaps: 0, odul: 0, sal: 0, carp: 0, fir: 0, dur: 0 };
     for (var i = 0; i < n; i++) {
       var b = oyna(beyin, new Bolum(Object.assign({}, secenek, { mod: i % 2 ? 'tara' : 'git' }), rng), 0);
-      s.odul += b.toplam / n; s.sal += b.salinim / n; s.carp += b.carpma / n;
+      s.odul += b.toplam / n; s.sal += b.salinim / n; s.carp += b.carpma / n; s.fir += b.firildakSayisi / n; if (b.durdu) s.dur += 1 / n;
       if (b.mod === 'git') { s.gn++; if (b.basari) s.ok++; }
       else { s.tn++; s.kaps += b.kapsama(); }
     }
-    return { gitBasari: s.gn ? s.ok / s.gn : 0, taraKapsama: s.tn ? s.kaps / s.tn : 0, ortOdul: s.odul, ortSalinim: s.sal, ortCarpma: s.carp };
+    return { gitBasari: s.gn ? s.ok / s.gn : 0, taraKapsama: s.tn ? s.kaps / s.tn : 0, ortOdul: s.odul, ortSalinim: s.sal, ortCarpma: s.carp, ortFirildak: s.fir, takilmaOrani: s.dur };
   }
 
   // ---------------- Eğitici (evrim stratejisi + Adam) ----------------

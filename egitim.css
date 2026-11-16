@@ -31,7 +31,8 @@
 .birincil[aria-pressed="true"] { background: #c97a00; }
 .ayar { display: block; margin: 8px 0; }
 .ayar input { width: 100%; }
-.dosya-btn { display: inline-block; text-align: center; cursor: pointer; padding: 10px 14px; border-radius: 8px; }
+.dosya-btn { display: inline-flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; padding: 10px 14px; border-radius: 8px; background: #e6e9ed; color: var(--yazi); font-weight: 600; min-height: 44px; }
+.dosya-btn:focus-within { outline: 3px solid #f59e0b; outline-offset: 2px; }
 .gunluk-liste { margin: 0; padding-left: 20px; max-height: 220px; overflow: auto; font-size: .88rem; }
 .nasil { margin: 0; padding-left: 20px; line-height: 1.5; }
 .sayac-sira .genis { grid-column: 1 / -1; }
@@ -46,3 +47,4 @@
 .tablo td.eksi { color: #b42318; font-weight: 600; }
 .nasil + h3, .tablo + h3 { margin-top: 14px; }
 .egitim-duzen .acil-sira { position: static; padding: 0; }
+.uyari { color: #b42318; font-weight: 600; }

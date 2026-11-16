@@ -29,24 +29,44 @@
     while (ol.children.length > 60) ol.removeChild(ol.lastChild);
   }
 
-  // ---------- Kayıt ----------
+  // ---------- Kayıt (bu cihazdaki tarayıcıya) ----------
+  // Beyin her birkaç saniyede, duraklatınca, sekme gizlenince ve sayfa kapanırken kaydedilir.
+  var depolamaVar = (function () {
+    try { localStorage.setItem('robotDeneme', '1'); localStorage.removeItem('robotDeneme'); return true; } catch (e) { return false; }
+  })();
+  var sonKayitZamani = 0;
+  function kayitYaz(m, hata) { var el = $('kayitDurum'); el.textContent = m; el.className = 'kucuk ' + (hata ? 'uyari' : 'soluk'); }
   function kaydet() {
+    if (!egitici) return;
+    if (!depolamaVar) { kayitYaz('Bu tarayıcı kayıt tutmuyor (gizli sekme ya da uygulama içi tarayıcı olabilir). Eğittiğin beyni kaybetmemek için "Beyni indir"e bas.', true); return; }
     try {
-      localStorage.setItem(KAYIT, JSON.stringify({ surum: O.SURUM, theta: egitici.theta, nesil: egitici.nesil, gecmis: egitici.gecmis.slice(-400), deneme: denemeSayisi }));
-    } catch (e) { /* önemli değil */ }
+      localStorage.setItem(KAYIT, JSON.stringify({ surum: O.SURUM, theta: egitici.theta, nesil: egitici.nesil, gecmis: egitici.gecmis.slice(-400), deneme: denemeSayisi, kaynak: kaynak, zaman: Date.now() }));
+      sonKayitZamani = Date.now();
+      kayitYaz('Bu cihaza kaydedildi: ' + new Date().toLocaleTimeString('tr-TR') + ' (nesil ' + egitici.nesil + '). Sayfayı kapatıp açınca bu beyin gelir.');
+    } catch (e) {
+      kayitYaz('Kaydedilemedi (tarayıcı yer vermedi). "Beyni indir" ile dosya olarak sakla.', true);
+    }
   }
+  window.addEventListener('pagehide', kaydet);
+  window.addEventListener('beforeunload', kaydet);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') kaydet(); });
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* desteklenmiyor */ }
   function benimse(v, ad) {
-    egitici = yeniEgitici(v); denemeSayisi = v.deneme || 0; kaynak = ad;
-    $('kaynak').textContent = ad;
+    egitici = yeniEgitici(v); denemeSayisi = (v && v.deneme) || 0; kaynak = ad;
+    $('kaynak').textContent = ad + ' (' + egitici.nesil + ' nesil)';
   }
   function hazirYukle() {
-    if (beyinUygun(HB)) { benimse(HB, 'Hazır eğitilmiş beyin (' + HB.nesil + ' nesil)'); return true; }
-    egitici = yeniEgitici(); kaynak = 'Boş beyin'; $('kaynak').textContent = kaynak; return false;
+    if (beyinUygun(HB)) { benimse(HB, 'Hazır eğitilmiş beyin'); return true; }
+    benimse(null, 'Boş beyin'); return false;
   }
   (function ilkYukleme() {
     try {
       var k = localStorage.getItem(KAYIT);
-      if (k) { var v = JSON.parse(k); if (beyinUygun(v)) { benimse(v, 'Bu tarayıcıda eğitilmeye devam eden beyin (' + v.nesil + ' nesil)'); gunluk('Bu tarayıcıdaki beyin yüklendi (nesil ' + v.nesil + ').'); return; } }
+      if (k) { var v = JSON.parse(k); if (beyinUygun(v)) {
+          benimse(v, v.kaynak || 'Senin eğittiğin beyin');
+          kayitYaz('Bu cihazda kayıtlı beyin yüklendi' + (v.zaman ? ' (son kayıt: ' + new Date(v.zaman).toLocaleString('tr-TR') + ')' : '') + '.');
+          gunluk('Bu cihazda kayıtlı beyin yüklendi: ' + kaynak + ' (nesil ' + v.nesil + ').'); return;
+        } }
     } catch (e) { /* yok */ }
     if (hazirYukle()) gunluk('Hazır eğitilmiş beyin yüklendi: robot ilk açılışta da bilgili.');
     else gunluk('Hazır beyin bulunamadı; boş beyinle başlandı.');
@@ -55,6 +75,7 @@
   // ---------- Sayaçlar ve eğri ----------
   function sayaclar() {
     $('sNesil').textContent = egitici.nesil;
+    if (kaynak) $('kaynak').textContent = kaynak + ' (' + egitici.nesil + ' nesil)';
     $('sDeneme').textContent = denemeSayisi.toLocaleString('tr-TR');
     $('sGit').textContent = sonTest.gitBasari === null ? '–' : yuzde(sonTest.gitBasari);
     $('sTara').textContent = sonTest.taraKapsama === null ? '–' : yuzde(sonTest.taraKapsama);
@@ -99,10 +120,13 @@
       denemeSayisi += egitici.cift * 2 * egitici.K;
     } while (performance.now() - t0 < 40);
     if (Math.floor(egitici.nesil / 5) !== Math.floor(n0 / 5)) degerlendirTest();
+    if (Date.now() - sonKayitZamani > 3000) kaydet();
     if (Math.floor(egitici.nesil / 10) !== Math.floor(n0 / 10)) {
       gunluk('Nesil ' + egitici.nesil + ': ortalama ödül ' + virgul(son.ortOdul, 2) + ', hedefe gitme ' + yuzde(sonTest.gitBasari) +
         ', tarama ' + yuzde(sonTest.taraKapsama) + ', ileri-geri ' + virgul(sonTest.ortSalinim, 1) + '/bölüm');
-      kaydet();
+      var ilk = egitici.gecmis[Math.max(0, egitici.gecmis.length - 30)];
+      if (sonTest.gitBasari < 0.1 && ilk && son.ortOdul > ilk.ortOdul + 0.3)
+        gunluk('Dikkat: puan artıyor ama hedefe gitme hâlâ %' + Math.round(sonTest.gitBasari * 100) + '. Robot şimdilik "hareket etmezsem çarpmam" diye ceza kaçırmayı öğreniyor (ödül açığı). Eğitime devam edince genelde geçer.');
     }
     sayaclar(); egriCiz();
     setTimeout(tik, 0);
@@ -111,12 +135,15 @@
     egitiyor = !egitiyor;
     this.textContent = egitiyor ? '⏸ Duraklat' : '▶ Eğitime devam et';
     this.setAttribute('aria-pressed', String(egitiyor));
-    if (egitiyor) { gunluk('Eğitim başladı.'); tik(); } else { kaydet(); gunluk('Eğitim duraklatıldı (nesil ' + egitici.nesil + ').'); }
+    if (egitiyor) {
+      kaynak = 'Senin eğittiğin beyin';
+      gunluk('Eğitim başladı.'); tik();
+    } else { kaydet(); gunluk('Eğitim duraklatıldı (nesil ' + egitici.nesil + ').'); }
   });
   function durdur() { if (egitiyor) $('egitBtn').click(); }
   $('sifirBtn').addEventListener('click', function () {
     durdur();
-    egitici = yeniEgitici(); denemeSayisi = 0; kaynak = 'Boş beyin (sıfırdan)'; $('kaynak').textContent = kaynak;
+    benimse(null, 'Boş beyin (sıfırdan)');
     gunluk('Yeni, boş beyin oluşturuldu: robot hiçbir şey bilmiyor, rastgele davranır. Eğitimi başlatınca öğrenir.');
     kaydet(); degerlendirTest(); sayaclar(); egriCiz(); yeniBolum();
   });
@@ -164,7 +191,7 @@
     r.onload = function () {
       try {
         var v = JSON.parse(r.result);
-        if (beyinUygun(v)) { durdur(); benimse(v, 'Dosyadan yüklenen beyin (' + (v.nesil || 0) + ' nesil)'); gunluk('Beyin dosyası yüklendi.'); kaydet(); degerlendirTest(); sayaclar(); egriCiz(); yeniBolum(); }
+        if (beyinUygun(v)) { durdur(); benimse(v, 'Dosyadan yüklenen beyin'); gunluk('Beyin dosyası yüklendi.'); kaydet(); degerlendirTest(); sayaclar(); egriCiz(); yeniBolum(); }
         else gunluk('Bu dosya bu sürümün beyin biçimine uymuyor (eski sürümün beyni olabilir).');
       } catch (e) { gunluk('Dosya okunamadı.'); }
     };
@@ -188,7 +215,9 @@
       ['Her adım, hedefe giderken (oyalanmasın)', A.adimGit], ['Her adım, tararken', A.adimTara],
       ['Duvara/engele çarptı', A.carpma], ['Kapalı kapıyı açtı (zaman alır)', A.kapiAcma],
       ['Geri gitti (arkasını göremez)', A.geri], ['Aynı kareye 3. kez ve sonra bastı', A.tekrar],
-      ['Az önce çıktığı kareye hemen döndü (ileri-geri)', A.salinim], ['Sola dönüp hemen sağa döndü (boşa dönüş)', A.bosaDonus]
+      ['Az önce çıktığı kareye hemen döndü (ileri-geri)', A.salinim], ['Sola dönüp hemen sağa döndü (boşa dönüş)', A.bosaDonus],
+      ['Aynı yöne 3. kez ve sonra üst üste döndü (yerinde fırıldak)', A.firildak],
+      ['25 adım aynı 1-2 karede takılı kaldı: durur, sahibine haber verir', A.takildiDur]
     ];
     var tb = $('odulTablo');
     satirlar.forEach(function (s) {
@@ -273,11 +302,11 @@
 
   function ozetYaz() {
     var b = bolum; if (!b) return;
-    var durum = b.bitti ? (b.basari ? '✔ başardı' : '✘ süre doldu') : 'çalışıyor';
-    var takildi = b.takilma() >= 1 ? ' · ⚠ takıldım, başka yol arıyorum' : '';
+    var durum = b.bitti ? (b.basari ? '✔ başardı' : b.durdu ? '✋ takıldım: durdum, sahibime haber veriyorum' : '✘ süre doldu') : 'çalışıyor';
+    var takildi = !b.bitti && b.takilma() >= 1 ? ' · ⚠ takılıyorum (' + b.takiliSure + '/15), başka yol arıyorum' : '';
     $('canliOzet').textContent = (b.mod === 'git' ? 'Görev: hedefe git (yeşil yıldız)' : 'Görev: evi tara (süpürge)') +
       ' · adım ' + b.adim + '/' + b.maksAdim + ' · ödül ' + virgul(b.toplam, 2) + ' · ' + durum +
-      (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + takildi;
+      (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + takildi;
     var kc = $('kararCubuk'); kc.textContent = '';
     for (var i = 0; i < 4; i++) {
       var p = sonOlas ? sonOlas[i] : 0, d = document.createElement('div'), cb = document.createElement('div'), ic = document.createElement('i');
@@ -322,6 +351,10 @@
   }
 
   sayaclar(); egriCiz(); yeniBolum(); ciz();
-  setTimeout(function () { degerlendirTest(); sayaclar(); }, 50);
+  setTimeout(function () {
+    degerlendirTest(); sayaclar();
+    if (kaynak !== 'Hazır eğitilmiş beyin' && sonTest.gitBasari < 0.5)
+      gunluk('Not: bu beyin henüz az eğitilmiş (hedefe gitme ' + yuzde(sonTest.gitBasari) + '). Takılabilir ya da yerinde dönebilir. Eğitime devam et ya da "Hazır eğitilmiş beyne dön"e bas.');
+  }, 50);
   window.requestAnimationFrame(dongu);
 })();

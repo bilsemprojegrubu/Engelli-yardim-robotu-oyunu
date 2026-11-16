@@ -279,12 +279,13 @@ Three.js r128 ve OrbitControls (MIT lisanslı) `js/vendor/` altında depodadır,
 Robotun karar veren kısmı **kural değil, küçük ve hafızalı bir sinir ağıdır** (`js/ogrenme.js`, sürüm 2). Ağ, simülasyonda binlerce denemeyle ödül/ceza alarak öğrenir (evrim stratejisi, pekiştirmeli öğrenme). Hedefe gitmek ve evi süpürge gibi taramak iki görevdir. Robotun özellikleri ve sınırları için: `ROBOT_OZELLIKLERI.md`.
 
 - **Gerçek robota benzer hareket:** ileri, geri, sola dön, sağa dön (iki motorlu tekerlek; yan yan gidemez). Kamera önde (~200°), arkasını göremez.
-- **Hafıza:** ağ bir önceki adımdaki iç durumunu, son hareketini ve takılıp takılmadığını bilir. İleri-geri gidip gelmek ve boşa dönmek ceza alır.
+- **Hafıza:** ağ bir önceki adımdaki iç durumunu, son hareketini ve takılıp takılmadığını bilir. İleri-geri gidip gelmek, boşa dönmek ve yerinde fırıldak gibi dönmek ceza alır. 25 adım aynı yerde takılı kalan robot durur ve "takıldım" der (gerçekte sahibine haber verir).
+- **Eğittiğin beyin kalır:** eğitim sırasında birkaç saniyede bir ve sayfa kapanırken bu cihazdaki tarayıcıya kaydedilir; kapatıp açınca o gelir. Başka cihaz için "Beyni indir / yükle".
 - **Hazır eğitilmiş beyin:** `js/hazir_beyin.js` (150 nesil). Site her cihazda bilgili robotla açılır; tarayıcıda eğitime devam edilebilir, boş beyinle sıfırdan da izlenebilir. Yeniden üretmek için eğitim betiği tekrar çalıştırılır (bkz. testler).
 - **Ezber yok:** her bölümde başlangıç, yön, hedef, kapı durumu ve engeller rastgele; tekerlek patinajı ve sensör gürültüsü de rastgeleleştirilir.
 - **Süpürge gibi tarama:** robot evi başta bilmez; kendi haritasını çıkarır, mobilyaların ve odaların yerini öğrenir. Her bölümde harita sıfırdan başlar.
 - **Canlı denetim:** gerçek ev, robotun kafasındaki harita, karar olasılıkları, hafıza hücreleri ve ileri-geri sayacı adım adım izlenir. Ödül/ceza tablosu sayfada koddaki sayılarla gösterilir.
 
-Ölçüm (hazır beyin, eğitimde görülmeyen 100 bölüm): hedefe gitme %100, tarama kapsamı %97,8, ileri-geri bölüm başına 0,41; kayma+gürültüde hedefe gitme %100, tarama %97,9. Eğitimsiz beyinde ileri-geri bölüm başına ~14–58.
+Ölçüm (hazır beyin, eğitimde görülmeyen 100 bölüm): hedefe gitme %100, tarama kapsamı %97,9, ileri-geri bölüm başına 0,54, takılıp durma %0; 1.700 ek denemede hiç yerinde dönüp durmadı; kayma+gürültüde hedefe gitme %100, tarama %97,9. Eğitimsiz beyinde ileri-geri bölüm başına ~14–58.
 
 Dürüst sınırlar: girdilerin bir kısmı robotun kendi haritasından çıkan yön ipuçlarıdır (algı katmanı). Simülasyon basit bir ızgaradır; ödül sayıları ve ölçüler varsayımdır. Kapak açma, buzdolabı, kumanda, devrilme/güç sınırı, sandalye itme ve destek görevleri sırada; gerçek robota aktarım ayrıca gerçek testle doğrulanmalıdır.
