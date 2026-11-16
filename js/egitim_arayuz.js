@@ -229,10 +229,95 @@
     });
   })();
 
+  // ---------- Beceri beyinleri (kapak açma, eşya itme) ----------
+  var BC = window.Beceri, HBC = window.HazirBeceri, BKAYIT = 'robotBeceri' + BC.SURUM + '_';
+  var beceriBeyin = {};
+  function beceriUygun(ad, v) { return v && Array.isArray(v.theta) && v.theta.length === BC.paramSayisi(BC.BECERILER[ad]); }
+  function beceriHazir(ad) { var h = HBC && HBC[ad]; return beceriUygun(ad, h) ? { theta: h.theta.slice(), nesil: h.nesil, kaynak: 'Hazır eğitilmiş' } : { theta: BC.yeniBeyin(BC.BECERILER[ad], O.tohum(Date.now() % 1e9)), nesil: 0, kaynak: 'Boş' }; }
+  Object.keys(BC.BECERILER).forEach(function (ad) {
+    var v = null;
+    try { v = JSON.parse(localStorage.getItem(BKAYIT + ad)); } catch (e) { v = null; }
+    beceriBeyin[ad] = beceriUygun(ad, v) ? v : beceriHazir(ad);
+  });
+  function beceriKaydet(ad) { try { localStorage.setItem(BKAYIT + ad, JSON.stringify(beceriBeyin[ad])); } catch (e) { /* kayıt yok */ } }
+
   // ---------- Canlı izleme ----------
   var bolum = null, ajan = null, bekle = 0, sonKare = 0, birikim = 0, sonOlas = null;
+  var gorev = null, bOrtam = null, bAjan = null, bAd = null, bOlas = null;
+
+  function serbestHucreler(b, odalar) {
+    var m = b._bfs(b.x, b.y), o = [], x, y;
+    for (y = 0; y < b.H; y++) for (x = 0; x < b.W; x++) {
+      if (b.engel[y][x] || b.kapi[y][x] || m[y][x] >= 1e9) continue;
+      var oda = D.odaBul ? D.odaBul(b.d, x, y) : null;
+      if (odalar && odalar.indexOf(oda) < 0) continue;
+      o.push({ x: x, y: y, uzak: m[y][x] });
+    }
+    return o;
+  }
+  function sec1(l, rng, enAz) { var u = l.filter(function (h) { return h.uzak >= (enAz || 0); }); if (!u.length) u = l; return u[Math.floor(rng() * u.length)]; }
+
+  // Görev zincirleri: yol bulma beyni + beceri beyinleri birlikte
+  var ZINCIR = {
+    kumanda: function (b, rng) {
+      var sahip = sec1(serbestHucreler(b, ['salon']), rng, 3), k = sec1(serbestHucreler(b), rng, 6);
+      return { ad: 'Kumandayı getir', sahip: sahip, nesne: { x: k.x, y: k.y, tur: 'kumanda', ad: 'kumanda' }, asamalar: [
+        { tip: 'git', x: k.x, y: k.y, ad: 'Kumandaya gidiyor' }, { tip: 'al', ad: 'Kumandayı aldı' },
+        { tip: 'git', x: sahip.x, y: sahip.y, ad: 'Kumandayı sahibine götürüyor' }, { tip: 'ver', ad: 'Kumandayı sahibine verdi' }] };
+    },
+    sise: function (b, rng) {
+      var sahip = sec1(serbestHucreler(b, ['salon']), rng, 3), k = sec1(serbestHucreler(b, ['mutfak']), rng, 4);
+      return { ad: 'Şişeyi aç ve getir', sahip: sahip, nesne: { x: k.x, y: k.y, tur: 'sise', ad: 'şişe' }, asamalar: [
+        { tip: 'git', x: k.x, y: k.y, ad: 'Mutfaktaki şişeye gidiyor' }, { tip: 'al', ad: 'Şişeyi bir eliyle tuttu' },
+        { tip: 'beceri', beceri: 'kapak', ad: 'Kapağı açıyor (öbür el kayışla çeviriyor)' },
+        { tip: 'git', x: sahip.x, y: sahip.y, ad: 'Şişeyi sahibine götürüyor' }, { tip: 'ver', ad: 'Şişeyi sahibine verdi' }] };
+    },
+    itme: function (b, rng) {
+      var sahip = sec1(serbestHucreler(b, ['salon']), rng, 3), k = sec1(serbestHucreler(b, ['salon', 'yatak']), rng, 4), i = Math.floor(rng() * BC.ESYALAR.length);
+      var BELIRTME = { sandalye: 'sandalyeyi', sehpa: 'sehpayı', 'küçük masa': 'küçük masayı', 'büyük masa': 'büyük masayı', kanepe: 'kanepeyi' };
+      return { ad: 'Sahibi "şu ' + (BELIRTME[BC.ESYALAR[i][0]] || BC.ESYALAR[i][0]) + ' it" dedi', sahip: sahip, nesne: { x: k.x, y: k.y, tur: 'esya', ad: BC.ESYALAR[i][0] }, asamalar: [
+        { tip: 'git', x: k.x, y: k.y, ad: BC.ESYALAR[i][0] + ' yanına gidiyor' },
+        { tip: 'beceri', beceri: 'itme', secenek: { esya: i }, ad: 'Önce yavaşça deneyip itiyor ya da reddediyor' }] };
+    }
+  };
+
+  function gorevMesaj(m, sinif) { gorev.mesajlar.push([m, sinif || '']); }
+  function sonrakiAsama() {
+    gorev.i++;
+    if (gorev.i >= gorev.asamalar.length) { gorev.bitti = true; bolum.bitti = true; return; }
+    var a = gorev.asamalar[gorev.i];
+    if (a.tip === 'git') { bolum.hedefDegistir(a.x, a.y); return; }
+    if (a.tip === 'al') { gorev.tasiyor = true; gorev.nesneAlindi = true; return sonrakiAsama(); }
+    if (a.tip === 'ver') { gorev.tasiyor = false; gorev.basari = gorev.basari !== false; if (gorev.ek) gorevMesaj(a.ad + gorev.ek, ''); return sonrakiAsama(); }
+    if (a.tip === 'beceri') {
+      bAd = a.beceri; var B = BC.BECERILER[bAd];
+      bOrtam = B.yeni(Object.assign({}, a.secenek || {}), O.tohum(Math.floor(Math.random() * 4e9)));
+      bAjan = new BC.Ajan(B, beceriBeyin[bAd].theta); bOlas = null;
+      $('beceriPanel').hidden = false; $('beceriBaslik').textContent = B.ad + ' — beyin: ' + beceriBeyin[bAd].kaynak + ' (' + beceriBeyin[bAd].nesil + ' nesil)';
+    }
+  }
+  function beceriBitti() {
+    var o = bOrtam, k = bAd;
+    gorevMesaj(o.sonuc, o.kaza ? 'kotu' : o.basari ? 'iyi' : 'kotu');
+    if (o.reddetti && o.basari) gorev.not = 'doğru karar: yapamayacağını anlayıp söyledi';
+    bOrtam = null;
+    if (k === 'kapak') {
+      if (o.kaza) { gorev.bitti = true; gorev.basari = false; bolum.bitti = true; return; }
+      if (o.reddetti) gorev.ek = o.basari ? ' (kapalı; açamadığını söyledi)' : ' (kapalı)';
+      if (!o.basari) gorev.basari = false;
+      return sonrakiAsama();
+    }
+    gorev.basari = o.basari; gorev.bitti = true; bolum.bitti = true;     // itme: zincirin sonu
+  }
+
   function yeniBolum() {
-    bolum = new O.Bolum(Object.assign({ mod: $('canliMod').value }, ortam()), O.tohum(Math.floor(Math.random() * 4e9)));
+    var mod = $('canliMod').value, rng = O.tohum(Math.floor(Math.random() * 4e9));
+    gorev = null; bOrtam = null; $('beceriPanel').hidden = true;
+    if (ZINCIR[mod]) {
+      bolum = new O.Bolum(Object.assign({}, ortam(), { mod: 'git' }), rng);
+      gorev = ZINCIR[mod](bolum, rng); gorev.i = -1; gorev.mesajlar = []; gorev.tasiyor = false;
+      sonrakiAsama();
+    } else bolum = new O.Bolum(Object.assign({ mod: mod }, ortam()), rng);
     ajan = new O.Ajan(egitici.theta);
     bekle = 0; sonOlas = null;
     ozetYaz();
@@ -250,6 +335,19 @@
     var cx = (b.x + 0.5) * CS, cy = (b.y + 0.5) * CS, Y = O.YON[b.yon], t = Math.atan2(Y[1], Y[0]), a = 100 * Math.PI / 180;
     c.fillStyle = 'rgba(255,159,28,0.13)'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, CS * O.GORUS, t - a, t + a); c.closePath(); c.fill();
   }
+  function nesneCiz(c, tur, cx, cy, olcek) {
+    var s = CS * (olcek || 1);
+    c.lineWidth = 1.5; c.strokeStyle = '#222';
+    if (tur === 'kumanda') { c.fillStyle = '#333'; c.fillRect(cx - s * 0.12, cy - s * 0.3, s * 0.24, s * 0.6); c.fillStyle = '#e33'; c.fillRect(cx - s * 0.05, cy - s * 0.22, s * 0.1, s * 0.08); }
+    else if (tur === 'sise') { c.fillStyle = '#9fd3ff'; c.fillRect(cx - s * 0.13, cy - s * 0.2, s * 0.26, s * 0.5); c.strokeRect(cx - s * 0.13, cy - s * 0.2, s * 0.26, s * 0.5); c.fillStyle = '#1b6fd1'; c.fillRect(cx - s * 0.08, cy - s * 0.34, s * 0.16, s * 0.12); }
+    else if (tur === 'esya') { c.fillStyle = '#b07a46'; c.fillRect(cx - s * 0.35, cy - s * 0.25, s * 0.7, s * 0.5); c.strokeRect(cx - s * 0.35, cy - s * 0.25, s * 0.7, s * 0.5); }
+    else if (tur === 'sahip') { c.fillStyle = '#2563eb'; c.beginPath(); c.arc(cx, cy - s * 0.12, s * 0.14, 0, 6.283); c.fill(); c.beginPath(); c.arc(cx, cy + s * 0.28, s * 0.26, Math.PI, 0); c.fill(); }
+  }
+  function gorevCiz(c, b) {
+    if (!gorev) return;
+    var s = gorev.sahip; nesneCiz(c, 'sahip', (s.x + 0.5) * CS, (s.y + 0.5) * CS);
+    if (!gorev.nesneAlindi) nesneCiz(c, gorev.nesne.tur, (gorev.nesne.x + 0.5) * CS, (gorev.nesne.y + 0.5) * CS);
+  }
   function robotCiz(c, b) {
     var cx = (b.x + 0.5) * CS, cy = (b.y + 0.5) * CS, Y = O.YON[b.yon], t = Math.atan2(Y[1], Y[0]);
     c.save(); c.translate(cx, cy); c.rotate(t);
@@ -258,9 +356,10 @@
     c.fillStyle = '#333'; c.fillRect(-CS * 0.1, -CS * 0.42, CS * 0.22, CS * 0.1); c.fillRect(-CS * 0.1, CS * 0.32, CS * 0.22, CS * 0.1);  // tekerlekler
     c.fillStyle = '#7a4a00'; c.beginPath(); c.moveTo(CS * 0.4, 0); c.lineTo(CS * 0.14, -CS * 0.16); c.lineTo(CS * 0.14, CS * 0.16); c.closePath(); c.fill();  // ön
     c.restore();
+    if (gorev && gorev.tasiyor) nesneCiz(c, gorev.nesne.tur, cx + CS * 0.3, cy - CS * 0.3, 0.6);
   }
   function hedefCiz(c, b) {
-    if (b.mod !== 'git') return;
+    if (b.mod !== 'git' || gorev) return;
     var cx = (b.hx + 0.5) * CS, cy = (b.hy + 0.5) * CS;
     c.fillStyle = '#1b9e4b'; c.beginPath();
     for (var i = 0; i < 10; i++) { var r = i % 2 ? CS * 0.18 : CS * 0.4, a = -Math.PI / 2 + i * Math.PI / 5; c.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); }
@@ -282,7 +381,7 @@
       else if (b.mobil[y][x]) hucreCiz(c, x, y, RENK[b.mobil[y][x]]);
       else if (b.engel[y][x] && !b.d.engel[y][x]) hucreCiz(c, x, y, '#9a7b5a');      // rastgele engel (koli)
     }
-    izgara(c, W, H); gorusCiz(c, b); hedefCiz(c, b); robotCiz(c, b);
+    izgara(c, W, H); gorusCiz(c, b); hedefCiz(c, b); gorevCiz(c, b); robotCiz(c, b);
     m.fillStyle = '#20242c'; m.fillRect(0, 0, W * CS, H * CS);
     for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
       if (!b.bilinen[y][x]) continue;
@@ -297,29 +396,65 @@
       var p = b.yerler[id]; m.fillStyle = '#146c2e';
       m.fillText('★ ' + O.BULUNACAK[id].split(' ')[0], (p.x + 0.5) * CS, (p.y + 0.5) * CS + 4);
     });
-    hedefCiz(m, b); robotCiz(m, b);
+    hedefCiz(m, b); gorevCiz(m, b); robotCiz(m, b);
   }
 
-  function ozetYaz() {
-    var b = bolum; if (!b) return;
-    var durum = b.bitti ? (b.basari ? '✔ başardı' : b.durdu ? '✋ takıldım: durdum, sahibime haber veriyorum' : '✘ süre doldu') : 'çalışıyor';
-    var takildi = !b.bitti && b.takilma() >= 1 ? ' · ⚠ takılıyorum (' + b.takiliSure + '/15), başka yol arıyorum' : '';
-    $('canliOzet').textContent = (b.mod === 'git' ? 'Görev: hedefe git (yeşil yıldız)' : 'Görev: evi tara (süpürge)') +
-      ' · adım ' + b.adim + '/' + b.maksAdim + ' · ödül ' + virgul(b.toplam, 2) + ' · ' + durum +
-      (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + takildi;
-    var kc = $('kararCubuk'); kc.textContent = '';
-    for (var i = 0; i < 4; i++) {
-      var p = sonOlas ? sonOlas[i] : 0, d = document.createElement('div'), cb = document.createElement('div'), ic = document.createElement('i');
-      d.className = i === b.sonEylem ? 'secili' : '';
-      d.textContent = O.EYLEM_AD[i] + ' ' + Math.round(p * 100) + '%';
+  function cubuklar(adlar, olas, secili) {
+    var kc = $('kararCubuk'); kc.textContent = ''; kc.style.gridTemplateColumns = 'repeat(' + (adlar.length <= 4 ? adlar.length : 3) + ', 1fr)';
+    adlar.forEach(function (ad, i) {
+      var p = olas ? olas[i] : 0, d = document.createElement('div'), cb = document.createElement('div'), ic = document.createElement('i');
+      d.className = i === secili ? 'secili' : '';
+      d.textContent = ad + ' ' + Math.round(p * 100) + '%';
       cb.className = 'cubuk'; ic.style.width = Math.round(p * 100) + '%'; cb.appendChild(ic); d.appendChild(cb); kc.appendChild(d);
-    }
-    var hz = $('hafizaCubuk'); hz.textContent = '';
-    (ajan ? ajan.h : []).forEach(function (v) {
+    });
+  }
+  function hafizaCiz(h) {
+    var hz = $('hafizaCubuk'); hz.textContent = ''; hz.style.gridTemplateColumns = 'repeat(' + Math.max(1, h.length) + ', 1fr)';
+    $('gizliSayi').textContent = h.length;
+    h.forEach(function (v) {
       var s = document.createElement('span');
       s.style.background = v >= 0 ? 'rgba(37,99,235,' + (0.15 + 0.85 * v) + ')' : 'rgba(255,159,28,' + (0.15 - 0.85 * v) + ')';
       s.title = virgul(v, 2); hz.appendChild(s);
     });
+  }
+  function beceriPanelYaz() {
+    if (!bOrtam && !(gorev && gorev.sonBeceri)) return;
+    var o = bOrtam || gorev.sonBeceri, ol = $('beceriOlcum'); ol.textContent = '';
+    o.olcumler().forEach(function (r) {
+      var d = document.createElement('div'), ad = document.createElement('span'), cb = document.createElement('div'), ic = document.createElement('i'), dg = document.createElement('span');
+      d.className = 'olcum ' + r[4]; ad.textContent = r[0]; dg.textContent = (r[2] >= 20 || r[3] === 'kez' || r[3] === 'adım' || r[3] === '' ? Math.round(r[1]) : virgul(r[1], 1)) + ' ' + r[3];
+      cb.className = 'cubuk'; ic.style.width = Math.min(100, Math.round(r[1] / r[2] * 100)) + '%'; cb.appendChild(ic);
+      d.appendChild(ad); d.appendChild(cb); d.appendChild(dg); ol.appendChild(d);
+    });
+    $('beceriGizli').textContent = 'Denetçi bilgisi — ' + o.gizli().replace(/(\d)\.(\d)/g, '$1,$2');
+    $('beceriSonuc').textContent = o.bitti ? o.sonuc : 'Adım ' + o.adim + ' · puan ' + virgul(o.toplam, 2);
+  }
+
+  function ozetYaz() {
+    var b = bolum; if (!b) return;
+    var takildi = !b.bitti && b.takilma() >= 1 ? ' · ⚠ takılıyorum (' + b.takiliSure + '/15), başka yol arıyorum' : '';
+    if (gorev) {
+      var a = gorev.asamalar[Math.min(gorev.i, gorev.asamalar.length - 1)];
+      var durumG = gorev.bitti ? (gorev.basari ? (gorev.not ? '✔ görev bitti — ' + gorev.not : '✔ görev tamam') : '✘ görev tamamlanamadı') : (b.bitti && !b.basari && !bOrtam ? (b.durdu ? '✋ takıldım: durdum, sahibime haber veriyorum' : '✘ süre doldu') : '▶ ' + a.ad);
+      $('canliOzet').textContent = 'Görev: ' + gorev.ad + ' · ' + durumG + ' · adım ' + b.adim + ' · çarpma ' + b.carpma + takildi;
+      var ga = $('gorevAdim'); ga.textContent = '';
+      gorev.asamalar.forEach(function (x, i) {
+        var li = document.createElement('li');
+        li.textContent = (i < gorev.i || gorev.bitti && i <= gorev.i ? '✔ ' : i === gorev.i ? '▶ ' : '○ ') + x.ad;
+        li.className = i === gorev.i && !gorev.bitti ? 'simdi' : '';
+        ga.appendChild(li);
+      });
+      gorev.mesajlar.forEach(function (m) { var li = document.createElement('li'); li.textContent = '→ ' + m[0]; li.className = 'mesaj ' + m[1]; ga.appendChild(li); });
+    } else {
+      var durum = b.bitti ? (b.basari ? '✔ başardı' : b.durdu ? '✋ takıldım: durdum, sahibime haber veriyorum' : '✘ süre doldu') : 'çalışıyor';
+      $('canliOzet').textContent = (b.mod === 'git' ? 'Görev: hedefe git (yeşil yıldız)' : 'Görev: evi tara (süpürge)') +
+        ' · adım ' + b.adim + '/' + b.maksAdim + ' · ödül ' + virgul(b.toplam, 2) + ' · ' + durum +
+        (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + takildi;
+      $('gorevAdim').textContent = '';
+    }
+    if (bOrtam) { cubuklar(BC.BECERILER[bAd].EYLEM_AD, bOlas, bOrtam.sonEylem); hafizaCiz(bAjan.h); }
+    else { cubuklar(O.EYLEM_AD, sonOlas, b.sonEylem); hafizaCiz(ajan ? ajan.h : []); }
+    beceriPanelYaz();
     var yl = $('yerListe'); yl.textContent = '';
     Object.keys(O.BULUNACAK).forEach(function (id) {
       var s = document.createElement('span'), y = b.yerler[id];
@@ -329,28 +464,109 @@
     });
   }
 
+  function tekAdim() {
+    var sic = +$('sicaklik').value;
+    if (bOrtam) {
+      var cb = bAjan.karar(bOrtam.gozlem());
+      bOlas = O.olasiliklar(cb, Math.max(0.05, sic));
+      bOrtam.ilerle(O.sec(cb, sic, Math.random));
+      if (bOrtam.bitti) { gorev.sonBeceri = bOrtam; beceriBitti(); }
+      return;
+    }
+    var cikis = ajan.karar(bolum.gozlem());
+    sonOlas = O.olasiliklar(cikis, Math.max(0.05, sic));
+    bolum.ilerle(O.sec(cikis, sic, Math.random));
+    if (gorev && bolum.bitti && bolum.basari && !gorev.bitti) sonrakiAsama();
+    else if (gorev && bolum.bitti && !bolum.basari) { gorev.bitti = true; gorev.basari = false; }
+  }
+  function bitti() { return gorev ? gorev.bitti : bolum.bitti; }
+
   function dongu(t) {
     window.requestAnimationFrame(dongu);
     if (!bolum) return;
     var hiz = +$('canliHiz').value, dt = Math.min(0.25, (t - sonKare) / 1000); sonKare = t;
-    if (bolum.bitti) {
+    if (bitti()) {
       bekle += dt;
-      if (bekle > 1.5) yeniBolum();
+      if (bekle > (gorev ? 3 : 1.5)) yeniBolum();
     } else {
       birikim += dt * hiz;
       var adimVar = false;
-      while (birikim >= 1 && !bolum.bitti) {
-        birikim -= 1; adimVar = true;
-        var cikis = ajan.karar(bolum.gozlem()), sic = +$('sicaklik').value;
-        sonOlas = O.olasiliklar(cikis, Math.max(0.05, sic));
-        bolum.ilerle(O.sec(cikis, sic, Math.random));
-      }
+      while (birikim >= 1 && !bitti()) { birikim -= 1; adimVar = true; tekAdim(); }
       if (!adimVar) return;
     }
     ciz(); ozetYaz();
   }
 
-  sayaclar(); egriCiz(); yeniBolum(); ciz();
+  // ---------- Beceri eğitimi ----------
+  var bEgitici = null, bEgitiyor = false, bSonTest = null;
+  function bSecili() { return $('beceriSec').value; }
+  function bEgiticiKur() {
+    var ad = bSecili(), v = beceriBeyin[ad];
+    bEgitici = new BC.Egitici(BC.BECERILER[ad], { beyin: v.theta, nesil: v.nesil, tohum: Date.now() % 1e9, lr: v.nesil > 100 ? 0.03 : 0.06, sigma: v.nesil > 100 ? 0.1 : 0.15 });
+    bSonTest = null; bYaz(); setTimeout(bTest, 30);
+  }
+  function bTest() { bSonTest = BC.degerlendir(BC.BECERILER[bSecili()], bEgitici.theta, 200, 4242); bYaz(); }
+  function bYaz() {
+    var ad = bSecili(), v = beceriBeyin[ad];
+    $('bNesil').textContent = bEgitici ? bEgitici.nesil : v.nesil;
+    $('bBasari').textContent = bSonTest ? yuzde(bSonTest.basari) : '–';
+    $('bRed').textContent = bSonTest ? yuzde(bSonTest.dogruRed) : '–';
+    $('bKaza').textContent = bSonTest ? yuzde(bSonTest.kaza) : '–';
+    $('bKaynak').textContent = v.kaynak + ' (' + v.nesil + ' nesil)';
+    $('bAciklama').textContent = ad === 'kapak' ? 'Başarı: açılabilir kapağı açma. Doğru red: robotun gücünü aşan kapakta denedikten sonra "açamıyorum" deme. Kaza: şişeyi ezme ya da düşürme.'
+      : 'Başarı: itilebilir eşyayı 50 cm itme. Doğru red: ağır eşyada ya da devrilme riskinde yavaşça denedikten sonra "yapamam" deme. Kaza: devrilme (simülasyonda).';
+  }
+  function bTik() {
+    if (!bEgitiyor) return;
+    var t0 = performance.now(), n0 = bEgitici.nesil;
+    do { bEgitici.nesilYap(); } while (performance.now() - t0 < 40);
+    var ad = bSecili();
+    beceriBeyin[ad] = { theta: bEgitici.theta.slice(), nesil: bEgitici.nesil, kaynak: 'Senin eğittiğin' };
+    if (Math.floor(bEgitici.nesil / 10) !== Math.floor(n0 / 10)) {
+      bTest(); beceriKaydet(ad);
+      gunluk(BC.BECERILER[ad].ad + ' nesil ' + bEgitici.nesil + ': başarı ' + yuzde(bSonTest.basari) + ', doğru red ' + yuzde(bSonTest.dogruRed) + ', kaza ' + yuzde(bSonTest.kaza));
+    }
+    bYaz(); setTimeout(bTik, 0);
+  }
+  $('bEgitBtn').addEventListener('click', function () {
+    bEgitiyor = !bEgitiyor;
+    this.textContent = bEgitiyor ? '⏸ Duraklat' : '▶ Beceriyi eğit';
+    this.setAttribute('aria-pressed', String(bEgitiyor));
+    if (bEgitiyor) { durdur(); gunluk(BC.BECERILER[bSecili()].ad + ' eğitimi başladı.'); bTik(); }
+    else { beceriKaydet(bSecili()); gunluk('Beceri eğitimi duraklatıldı.'); }
+  });
+  function bDurdur() { if (bEgitiyor) $('bEgitBtn').click(); }
+  $('egitBtn').addEventListener('click', function () { if (egitiyor) bDurdur(); });
+  $('beceriSec').addEventListener('change', function () { bDurdur(); bEgiticiKur(); });
+  $('bHazirBtn').addEventListener('click', function () { bDurdur(); var ad = bSecili(); beceriBeyin[ad] = beceriHazir(ad); beceriKaydet(ad); gunluk(BC.BECERILER[ad].ad + ': hazır eğitilmiş beyne dönüldü.'); bEgiticiKur(); });
+  $('bSifirBtn').addEventListener('click', function () {
+    bDurdur(); var ad = bSecili(), B = BC.BECERILER[ad];
+    beceriBeyin[ad] = { theta: BC.yeniBeyin(B, O.tohum(Date.now() % 1e9)), nesil: 0, kaynak: 'Boş' }; beceriKaydet(ad);
+    gunluk(B.ad + ': boş beyin. Görev zincirinde bu beceri artık rastgele davranır; "Beceriyi eğit" ile öğret.'); bEgiticiKur();
+  });
+  window.addEventListener('pagehide', function () { if (bEgitici) beceriKaydet(bSecili()); });
+
+  // Beceri ödül tabloları (kodla aynı sayılar)
+  (function () {
+    var ADLAR = { adim: 'Her adım (oyalanmasın)', ilerleme: 'İlerleme (her çeyrek tur / her 5 cm)', kayisKaydi: 'Kayış kaydı (fazla tork)', siseKaydi: 'Şişe elinde döndü (az sıktı)',
+      acti: 'Kapağı açtı', ezdi: 'Şişeyi ezdi', dusurdu: 'Şişeyi düşürdü', patinaj: 'Tekerlek patinajı', tehlike: 'Devrilmeye çok yaklaştı (eğim > %80)', itti: 'Eşyayı itti (50 cm)', devrildi: 'Devrildi',
+      dogruRed: 'Denedikten sonra doğru "yapamam" dedi', yanlisRed: 'Yapabileceği işe "yapamam" dedi', denemedenRed: 'Hiç denemeden "yapamam" dedi', kararsiz: 'Süre doldu, karar vermedi (sahibini bekletti)' };
+    var tb = $('beceriOdulTablo');
+    Object.keys(BC.BECERILER).forEach(function (k) {
+      var B = BC.BECERILER[k], tr0 = document.createElement('tr'), th = document.createElement('th');
+      th.colSpan = 2; th.textContent = B.ad; tr0.appendChild(th); tb.appendChild(tr0);
+      Object.keys(B.ODUL).forEach(function (o) {
+        var v = B.ODUL[o], tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
+        a.textContent = ADLAR[o] || o; b.textContent = (v > 0 ? '+' : '') + virgul(v, 2); b.className = v > 0 ? 'arti' : 'eksi';
+        tr.appendChild(a); tr.appendChild(b); tb.appendChild(tr);
+      });
+    });
+    var tr = document.createElement('tr'), a = document.createElement('td'), b = document.createElement('td');
+    a.textContent = 'Öğretmen ipucu: doğru kavrama/torka ya da güvenli kuvvete yaklaşma (gizli değerleri simülasyon bilir, robot görmez)'; b.textContent = 'en çok +0,6'; b.className = 'arti';
+    tr.appendChild(a); tr.appendChild(b); tb.appendChild(tr);
+  })();
+
+  sayaclar(); egriCiz(); yeniBolum(); ciz(); bEgiticiKur();
   setTimeout(function () {
     degerlendirTest(); sayaclar();
     if (kaynak !== 'Hazır eğitilmiş beyin' && sonTest.gitBasari < 0.5)

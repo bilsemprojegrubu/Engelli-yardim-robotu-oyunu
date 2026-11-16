@@ -48,3 +48,17 @@
 .nasil + h3, .tablo + h3 { margin-top: 14px; }
 .egitim-duzen .acil-sira { position: static; padding: 0; }
 .uyari { color: #b42318; font-weight: 600; }
+.gorev-adim { list-style: none; padding: 0; margin: 4px 0 8px; font-size: .9rem; }
+.gorev-adim li { padding: 2px 0; }
+.gorev-adim li.simdi { font-weight: 700; color: #1d4ed8; }
+.gorev-adim li.mesaj { color: #374151; padding-left: 8px; }
+.gorev-adim li.mesaj.iyi { color: #146c2e; }
+.gorev-adim li.mesaj.kotu { color: #b42318; font-weight: 600; }
+.beceri-panel { border: 1px solid var(--cizgi); border-radius: 10px; padding: 10px; margin: 8px 0; background: #fbfbfc; }
+.beceri-panel h3 { margin: 0 0 6px; font-size: 1rem; }
+.beceri-olcum .olcum { display: grid; grid-template-columns: minmax(0, 1.4fr) 1fr auto; gap: 8px; align-items: center; font-size: .88rem; margin: 3px 0; }
+.beceri-olcum .cubuk { height: 10px; background: #e3e7ec; border-radius: 5px; overflow: hidden; }
+.beceri-olcum .cubuk i { display: block; height: 100%; background: #2563eb; }
+.beceri-olcum .olcum.uyari .cubuk i { background: #dc2626; }
+.beceri-olcum .olcum.uyari span:first-child { color: #b42318; font-weight: 600; }
+.beceri-olcum .olcum.iyi .cubuk i { background: #16a34a; }

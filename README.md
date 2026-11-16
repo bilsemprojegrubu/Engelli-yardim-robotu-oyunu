@@ -244,6 +244,7 @@ Tarayıcı ve npm gerekmez, sadece Node.js:
 node tests/komut_testi.js     # 60+ Türkçe cümle: komut anlama
 node tests/senaryo_testi.js   # uçtan uca: kapak torku, buzdolabı yayı, acil durdurma, 300 rastgele komut
 node tests/ogrenme_testi.js   # pekiştirmeli öğrenme: robot gerçekten öğreniyor mu?
+node tests/beceri_testi.js    # beceriler: kapak açma, eşya itme (güç/devrilme sınırı)
 node tests/takim_testi.js     # Supabase modülü (sahte fetch) + gizli anahtar kontrolü
 ```
 
@@ -286,6 +287,16 @@ Robotun karar veren kısmı **kural değil, küçük ve hafızalı bir sinir ağ
 - **Süpürge gibi tarama:** robot evi başta bilmez; kendi haritasını çıkarır, mobilyaların ve odaların yerini öğrenir. Her bölümde harita sıfırdan başlar.
 - **Canlı denetim:** gerçek ev, robotun kafasındaki harita, karar olasılıkları, hafıza hücreleri ve ileri-geri sayacı adım adım izlenir. Ödül/ceza tablosu sayfada koddaki sayılarla gösterilir.
 
+### Beceriler ve görev zincirleri (`js/beceri.js`)
+
+Yol bulma beyninden ayrı, her becerinin kendi küçük, hafızalı beyni var; robot gizli değerleri (kapağın sıkılığı, eşyanın ağırlığı, zemin) bilmez, sensörlerinden anlar:
+
+- **Kapak açma:** bir el şişeyi tutar, öbürü kayışla kapağı çevirir. Az sıkarsa şişe elinde döner, çok sıkarsa ezilir. Kapak robotun gücünü aşıyorsa önce dener, sonra "açamıyorum" der. (Hazır beyin, görülmemiş 1.000 şişe: açılabilirde %98,4 açtı, açılamazda %99,5 doğru "açamıyorum", kaza %0,3.)
+- **Eşya itme (güç ve devrilme sınırı):** kuvveti yavaş yavaş artırır; eşya ağırsa, tekerlek kayıyorsa ya da eğim devrilmeye yaklaşıyorsa "yapamam" der. (Hazır beyin: itilebilirde %97,1, ağırda %99,8 doğru red, devrilme %0,1.)
+- **Görev zincirleri:** "Kumandayı getir", "Şişeyi aç ve getir", "Eşyayı it" — yol bulma beyni + beceri beyinleri birlikte; robot evi hatırladığı için ikinci yolculuk kısalır.
+- Ödül açığı dersleri: robot önce "hiç denemeden yapamam" demeyi öğrendi; denemeden reddetmek cezalı yapıldı. Öğrenmeyi kolaylaştırmak için "öğretmen ipucu" (potansiyel tabanlı ödül şekillendirme) kullanıldı; gizli değerleri simülasyon bilir, robot görmez.
+- Sayılar varsayımdır (kapak 2,2–4,2 N·m, robot 20–30 kg, kayış en çok 5 N·m vb.); gerçek ölçümle değişecek.
+
 Ölçüm (hazır beyin, eğitimde görülmeyen 100 bölüm): hedefe gitme %100, tarama kapsamı %97,9, ileri-geri bölüm başına 0,54, takılıp durma %0; 1.700 ek denemede hiç yerinde dönüp durmadı; kayma+gürültüde hedefe gitme %100, tarama %97,9. Eğitimsiz beyinde ileri-geri bölüm başına ~14–58.
 
-Dürüst sınırlar: girdilerin bir kısmı robotun kendi haritasından çıkan yön ipuçlarıdır (algı katmanı). Simülasyon basit bir ızgaradır; ödül sayıları ve ölçüler varsayımdır. Kapak açma, buzdolabı, kumanda, devrilme/güç sınırı, sandalye itme ve destek görevleri sırada; gerçek robota aktarım ayrıca gerçek testle doğrulanmalıdır.
+Dürüst sınırlar: girdilerin bir kısmı robotun kendi haritasından çıkan yön ipuçlarıdır (algı katmanı). Simülasyon basit bir ızgaradır; ödül sayıları ve ölçüler varsayımdır. Buzdolabı açma, tekerlekli sandalye itme ve ayağa kalkarken destek görevleri sırada; gerçek robota aktarım ayrıca gerçek testle doğrulanmalıdır.

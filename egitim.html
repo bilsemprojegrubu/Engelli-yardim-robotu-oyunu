@@ -27,6 +27,9 @@
             <option value="karisik">Karışık</option>
             <option value="git">Hedefe git</option>
             <option value="tara">Evi tara (süpürge)</option>
+            <option value="kumanda">Görev: Kumandayı getir</option>
+            <option value="sise">Görev: Şişeyi aç ve getir</option>
+            <option value="itme">Görev: Eşyayı it (güç/devrilme sınırı)</option>
           </select>
         </label>
         <label>İzleme hızı <input id="canliHiz" type="range" min="1" max="40" value="8"> <output id="canliHizDeger">8</output> adım/sn</label>
@@ -38,8 +41,15 @@
       </div>
       <div class="canli-bilgi" aria-live="off">
         <div id="canliOzet" class="ozet">Hazırlanıyor…</div>
+        <ol id="gorevAdim" class="gorev-adim" aria-label="Görevin aşamaları"></ol>
+        <section id="beceriPanel" class="beceri-panel" hidden aria-label="Beceri paneli">
+          <h3 id="beceriBaslik">Beceri</h3>
+          <div id="beceriOlcum" class="beceri-olcum"></div>
+          <p id="beceriSonuc" class="ozet"></p>
+          <p id="beceriGizli" class="soluk kucuk"></p>
+        </section>
         <div id="kararCubuk" class="karar" aria-label="Robotun kararı: hareket olasılıkları"></div>
-        <div class="hafiza-sira"><span class="soluk kucuk">Hafıza (<span id="gizliSayi">16</span> hücre; mavi +, turuncu −):</span>
+        <div class="hafiza-sira"><span class="soluk kucuk">Şu an karar veren beynin hafızası (<span id="gizliSayi">16</span> hücre; mavi +, turuncu −):</span>
           <div id="hafizaCubuk" class="hafiza" aria-label="Robotun kısa hafızası"></div></div>
         <div id="yerListe" class="yerler"></div>
       </div>
@@ -68,6 +78,29 @@
         </div>
         <p class="soluk kucuk">Site, simülasyonda önceden eğitilmiş beyinle açılır. "Yeni (boş) beyin" ile sıfırdan öğrenmesini izleyebilirsin:
           boş beyin başta rastgele davranır, çarpar, ileri-geri gider durur; nesil arttıkça düzelir.</p>
+      </section>
+
+      <section class="kart" aria-labelledby="beceriEgitBaslik">
+        <h2 id="beceriEgitBaslik">Beceri eğitimi</h2>
+        <label class="ayar">Hangi beceri?
+          <select id="beceriSec">
+            <option value="kapak">Kapak açma (bir el tutar, öbürü kayışla çevirir)</option>
+            <option value="itme">Eşya itme (güç ve devrilme sınırı)</option>
+          </select></label>
+        <div class="sayac-sira">
+          <div><span id="bNesil" class="buyuk">0</span><small>nesil</small></div>
+          <div><span id="bBasari" class="buyuk">–</span><small>başarı</small></div>
+          <div><span id="bRed" class="buyuk">–</span><small>doğru "yapamam"</small></div>
+          <div><span id="bKaza" class="buyuk">–</span><small>kaza</small></div>
+        </div>
+        <p class="kucuk">Şu anki beceri beyni: <strong id="bKaynak">–</strong></p>
+        <p id="bAciklama" class="soluk kucuk"></p>
+        <div class="acil-sira"><button id="bEgitBtn" class="birincil" type="button">▶ Beceriyi eğit</button></div>
+        <div class="acil-sira">
+          <button id="bHazirBtn" class="ikincil" type="button">Hazır beceri beynine dön</button>
+          <button id="bSifirBtn" class="ikincil" type="button">Boş beceri beyni</button>
+        </div>
+        <p class="soluk kucuk">Robot gizli değerleri (kapağın sıkılığı, eşyanın ağırlığı, zemin) bilmez; sensörlerinden anlar. Görev zincirleri bu beyinleri kullanır.</p>
       </section>
 
       <section class="kart" aria-labelledby="ayarBaslik">
@@ -113,16 +146,20 @@
       <h3>Robot neye puan alıyor? (koddaki sayıların aynısı)</h3>
       <table class="tablo"><thead><tr><th>Durum</th><th>Puan</th></tr></thead><tbody id="odulTablo"></tbody></table>
 
+      <h3>Beceriler neye puan alıyor?</h3>
+      <table class="tablo"><thead><tr><th>Durum</th><th>Puan</th></tr></thead><tbody id="beceriOdulTablo"></tbody></table>
+      <p class="soluk kucuk">Neden "denemeden yapamam" cezalı? İlk denemede robot hiç denemeden "yapamam" deyip cezadan kaçmayı öğrendi (ödül açığı). Kendini aşırı güçlü sanmasın, ama tembel de olmasın: önce yavaşça dener, sınıra gelince bırakır.</p>
+
       <h3>Görevler ve özellikler</h3>
       <p class="soluk kucuk">Hedef: bütün görevler simülasyonda önceden öğrenilmiş olsun; bir özellik gerçek robota eklenince yeniden eğitim gerekmeden kullanıma açılsın. Gerçekte açmadan önce yine kişisiz test ve güvenlik denemesi gerekir.</p>
       <table class="tablo"><thead><tr><th>Görev</th><th>Simülasyonda</th><th>Gerçekte</th></tr></thead><tbody>
         <tr><td>Hedefe gitme (ileri/geri/dönüş)</td><td class="arti">Öğrenildi</td><td>İlk model</td></tr>
         <tr><td>Evi tarama, odaları/mobilyaları öğrenme</td><td class="arti">Öğrenildi</td><td>İlk model</td></tr>
-        <tr><td>Şişe kapağı açma (bir el tutar, öbürü kayışla çevirir) ve sahibine verme</td><td>Sırada</td><td>İlk model (ana iş)</td></tr>
+        <tr><td>Şişe kapağı açma (bir el tutar, öbürü kayışla çevirir) ve sahibine verme</td><td class="arti">Öğrenildi</td><td>İlk model (ana iş)</td></tr>
         <tr><td>Önden kapı açma</td><td>Kısmen (kapalı kapıyı açıp geçer)</td><td>Sonra</td></tr>
         <tr><td>Buzdolabı açma (tutacı tutar, tekerlekle geri giderek açar)</td><td>Sırada</td><td>Sonra</td></tr>
-        <tr><td>Televizyon kumandasını getirme</td><td>Sırada</td><td>İlk model</td></tr>
-        <tr><td>Devrilme ve güç sınırı: yapamayacağı işi ("bu masa çok ağır") reddetme</td><td>Sırada</td><td>Her zaman açık</td></tr>
+        <tr><td>Televizyon kumandasını getirme</td><td class="arti">Öğrenildi (yol bulma + al/ver)</td><td>İlk model</td></tr>
+        <tr><td>Devrilme ve güç sınırı: yapamayacağı işi ("bu masa çok ağır") denedikten sonra reddetme</td><td class="arti">Öğrenildi (eşya itme)</td><td>Her zaman açık</td></tr>
         <tr><td>Tekerlekli sandalyeyi itme (salon → mutfak → yatak odası)</td><td>Sırada</td><td class="eksi">Kapalı (sonra)</td></tr>
         <tr><td>Ayağa kalkarken destek olma (robot kilitli durur)</td><td>Sırada</td><td class="eksi">Kapalı (sonra)</td></tr>
       </tbody></table>
@@ -134,6 +171,8 @@
   <script src="js/dunya.js"></script>
   <script src="js/ogrenme.js"></script>
   <script src="js/hazir_beyin.js"></script>
+  <script src="js/beceri.js"></script>
+  <script src="js/hazir_beceri.js"></script>
   <script src="js/egitim_arayuz.js"></script>
 </body>
 </html>

@@ -83,12 +83,12 @@
     var top = e.reduce(function (a, b) { return a + b; }, 0);
     return e.map(function (v) { return v / top; });
   }
-  function sec(c, sicaklik, rng) {
-    var e = 0, i;
+  function sec(c, sicaklik, rng) {                      // c: her seçeneğin puanı (seçenek sayısı beyne göre değişir)
+    var e = 0, i, n = c.length;
     if (sicaklik > 0) {
       var p = olasiliklar(c, sicaklik), r = rng(), s = 0;
-      for (i = 0; i < CIKIS; i++) { s += p[i]; e = i; if (r <= s) break; }
-    } else for (i = 1; i < CIKIS; i++) if (c[i] > c[e]) e = i;
+      for (i = 0; i < n; i++) { s += p[i]; e = i; if (r <= s) break; }
+    } else for (i = 1; i < n; i++) if (c[i] > c[e]) e = i;
     return e;
   }
   function yeniBeyin(rng) {
@@ -344,6 +344,13 @@
     if (this.adim >= this.maksAdim) this.bitti = true;
     this.sonOdul = odul; this.toplam += odul;
     return odul;
+  };
+
+  // Görev zinciri için: aynı evde, aynı haritayla yeni hedef (robot evi hatırlar)
+  Bolum.prototype.hedefDegistir = function (x, y) {
+    this.mod = 'git'; this.hx = x; this.hy = y; this.mesafe = this._bfs(x, y);
+    this.bitti = false; this.basari = false; this.durdu = false; this.maksAdim = this.adim + 200;
+    this.takiliSure = 0; this.sonKareler = []; this.izler = [[this.x, this.y]];
   };
 
   Bolum.prototype.kapsama = function () {
