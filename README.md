@@ -279,7 +279,7 @@ Three.js r128 ve OrbitControls (MIT lisanslı) `js/vendor/` altında depodadır,
 
 Robotun karar veren kısmı **kural değil, küçük ve hafızalı bir sinir ağıdır** (`js/ogrenme.js`, sürüm 2). Ağ, simülasyonda binlerce denemeyle ödül/ceza alarak öğrenir (evrim stratejisi, pekiştirmeli öğrenme). Hedefe gitmek ve evi süpürge gibi taramak iki görevdir. Robotun özellikleri ve sınırları için: `ROBOT_OZELLIKLERI.md`.
 
-- **Gerçek robota benzer hareket:** ileri, geri, sola dön, sağa dön (iki motorlu tekerlek; yan yan gidemez). Kamera önde (~200°), arkasını göremez.
+- **Gerçek robota benzer hareket:** ileri, geri, sola dön, sağa dön (iki motorlu tekerlek; yan yan gidemez). Kamera ve ön tampon önde (~200°); arkada sensör yok. Geri gitmek cezalı, hiç görmediği yere geri girmek daha cezalı; sayfada geri gitme oranı gösterilir ve geri gitmeyi alışkanlık edinmiş beyin için uyarı çıkar.
 - **Hafıza:** ağ bir önceki adımdaki iç durumunu, son hareketini ve takılıp takılmadığını bilir. İleri-geri gidip gelmek, boşa dönmek ve yerinde fırıldak gibi dönmek ceza alır. 25 adım aynı yerde takılı kalan robot durur ve "takıldım" der (gerçekte sahibine haber verir).
 - **Eğitim hızı:** eğitim ayrı bir arka plan işçisinde (Web Worker) koşar, sayfa donmaz; eğitim sürerken ekranın kapanması engellenmeye çalışılır (Wake Lock). Sayfa açıkken bilgisayarda dakikada yüzlerce nesil eğitilir. Telefonda ekran kapanınca ya da tarayıcı arka plana geçince işletim sistemi sayfayı yavaşlatır/dondurur, eğitim neredeyse durur; bu bir web sayfasında engellenemez. Sayfada hız göstergesi ve arka plan uyarısı var.
 - **Eğittiğin beyin kalır:** eğitim sırasında birkaç saniyede bir ve sayfa kapanırken bu cihazdaki tarayıcıya kaydedilir; kapatıp açınca o gelir. Başka cihaz için "Beyni indir / yükle".
