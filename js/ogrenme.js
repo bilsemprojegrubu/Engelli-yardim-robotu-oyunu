@@ -34,7 +34,8 @@
     adimTara: -0.002,     // tararken her adım
     carpma: -0.03,        // duvara/engele çarpma
     kapiAcma: -0.01,      // kapalı kapıyı açmak biraz zaman alır
-    geri: -0.01,          // geri gitmek: arkasını göremez, gerekmedikçe yapmasın
+    geri: -0.03,          // geri gitmek: sensörler önde, arkasını göremez; gerekmedikçe yapmasın
+    korGeri: -0.05,       // hiç görmediği bir kareye geri geri girmek (arkasını görmeden geri gitti)
     tekrar: -0.01,        // aynı kareye 3. kez ve sonrası
     salinim: -0.03,       // az önce çıktığı kareye hemen geri dönmek (ileri-geri gidip gelme)
     bosaDonus: -0.01,     // sola dönüp hemen sağa dönmek (ya da tersi)
@@ -114,7 +115,7 @@
     this.maksAdim = secenek.maksAdim || (this.mod === 'git' ? 200 : 400);
     this.adim = 0; this.toplam = 0; this.bitti = false; this.basari = false;
     this.sonEylem = -1; this.sonOdul = 0; this.carpma = 0; this.salinim = 0; this.geriSayisi = 0;
-    this.donusSeri = 0; this.takiliSure = 0; this.durdu = false; this.firildakSayisi = 0;
+    this.donusSeri = 0; this.takiliSure = 0; this.durdu = false; this.firildakSayisi = 0; this.korGeriSayisi = 0;
     this.izler = [[this.x, this.y]]; this.sonKareler = [];
     this._gor();
   }
@@ -184,10 +185,12 @@
     return this.engel[cy][cx] ? 0 : 1;
   };
 
-  // Sensör: önde ışınlar (duvar ardını göremez) + her yöne 1 kare yakın algı. Yeni görülen serbest hücre sayısını döndürür.
+  // Sensör: önde ışınlar (duvar ardını göremez) + önde ve yanlarda 1 kare yakın algı (ön tampon).
+  // ARKADA sensör yok (çizimdeki robotta tampon ve kamera önde). Yeni görülen serbest hücre sayısını döndürür.
   Bolum.prototype._gor = function () {
-    var yeni = 0, a, r, dx, dy;
+    var yeni = 0, a, r, dx, dy, hv = YON[this.yon];
     for (dy = -1; dy <= 1; dy++) for (dx = -1; dx <= 1; dx++) {
+      if (dx * hv[0] + dy * hv[1] < 0) continue;                  // arkadaki kareler görülmez
       var ax = this.x + dx, ay = this.y + dy;
       if (ax >= 0 && ay >= 0 && ax < this.W && ay < this.H) yeni += this._isaretle(ax, ay);
     }
@@ -313,8 +316,11 @@
       if (!patinaj) this.yon = (this.yon + (eylem === 2 ? 3 : 1)) % 4;
       else if (this.rng() < 0.5) this.yon = (this.yon + 2) % 4;     // fazla döndü (yarım tur)
     } else {
-      if (eylem === 1) { odul += ODUL.geri; this.geriSayisi++; }
       var Y = YON[eylem === 0 ? this.yon : (this.yon + 2) % 4], nx = this.x + Y[0], ny = this.y + Y[1];
+      if (eylem === 1) {
+        odul += ODUL.geri; this.geriSayisi++;
+        if (nx >= 0 && ny >= 0 && nx < this.W && ny < this.H && !this.bilinen[ny][nx]) { odul += ODUL.korGeri; this.korGeriSayisi++; }
+      }
       if (patinaj) { /* yerinde kaldı */ }
       else if (nx < 0 || ny < 0 || nx >= this.W || ny >= this.H || this.engel[ny][nx]) {
         odul += ODUL.carpma; this.carpma++;
@@ -367,14 +373,14 @@
   // Bir beyni n rastgele bölümde sınar
   function degerlendir(beyin, n, secenek, tohumDeger) {
     var rng = tohum(tohumDeger === undefined ? 12345 : tohumDeger);
-    var s = { gn: 0, ok: 0, tn: 0, kaps: 0, odul: 0, sal: 0, carp: 0, fir: 0, dur: 0 };
+    var s = { gn: 0, ok: 0, tn: 0, kaps: 0, odul: 0, sal: 0, carp: 0, fir: 0, dur: 0, geri: 0, adim: 0 };
     for (var i = 0; i < n; i++) {
       var b = oyna(beyin, new Bolum(Object.assign({}, secenek, { mod: i % 2 ? 'tara' : 'git' }), rng), 0);
-      s.odul += b.toplam / n; s.sal += b.salinim / n; s.carp += b.carpma / n; s.fir += b.firildakSayisi / n; if (b.durdu) s.dur += 1 / n;
+      s.odul += b.toplam / n; s.sal += b.salinim / n; s.carp += b.carpma / n; s.fir += b.firildakSayisi / n; if (b.durdu) s.dur += 1 / n; s.geri += b.geriSayisi; s.adim += b.adim;
       if (b.mod === 'git') { s.gn++; if (b.basari) s.ok++; }
       else { s.tn++; s.kaps += b.kapsama(); }
     }
-    return { gitBasari: s.gn ? s.ok / s.gn : 0, taraKapsama: s.tn ? s.kaps / s.tn : 0, ortOdul: s.odul, ortSalinim: s.sal, ortCarpma: s.carp, ortFirildak: s.fir, takilmaOrani: s.dur };
+    return { gitBasari: s.gn ? s.ok / s.gn : 0, taraKapsama: s.tn ? s.kaps / s.tn : 0, ortOdul: s.odul, ortSalinim: s.sal, ortCarpma: s.carp, ortFirildak: s.fir, takilmaOrani: s.dur, geriOrani: s.adim ? s.geri / s.adim : 0 };
   }
 
   // ---------------- Eğitici (evrim stratejisi + Adam) ----------------

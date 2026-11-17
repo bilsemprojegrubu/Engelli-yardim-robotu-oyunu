@@ -46,6 +46,18 @@ test('Hazır beyin olduğu yerde dönüp durmaz (300 deneme, rastgelelik 0,3)', 
   }
   assert.ok(kotu <= 3, 'takılan/dönen deneme: ' + kotu);
 });
+test('Arkada sensör yok; görmediği yere geri gitmek ek ceza alır', function () {
+  var b = new O.Bolum({ mod: 'tara', rastgeleEngel: 0 }, O.tohum(21)), Y = O.YON[(b.yon + 2) % 4];
+  var ax = b.x + Y[0], ay = b.y + Y[1];
+  if (ax >= 0 && ay >= 0 && ax < b.W && ay < b.H) assert.strictEqual(b.bilinen[ay][ax], false, 'arkadaki kare başta bilinmemeli');
+  b.ilerle(1);
+  assert.ok(b.geriSayisi === 1 && b.korGeriSayisi === 1, 'geri ' + b.geriSayisi + ', görmeden geri ' + b.korGeriSayisi);
+  assert.ok(O.ODUL.geri < 0 && O.ODUL.korGeri < 0);
+});
+test('Hazır beyin neredeyse hiç geri gitmez (< %2)', function () {
+  var d = O.degerlendir(HB.theta, 40, {}, 24680);
+  assert.ok(d.geriOrani < 0.02, 'geri oranı ' + d.geriOrani);
+});
 test('Hafıza çalışır: aynı girdiye önceki adımlara göre farklı iç durum', function () {
   var w = O.yeniBeyin(O.tohum(9)), a = new O.Ajan(w), x = new Array(O.GIRIS).fill(0.3);
   var c1 = a.karar(x), c2 = a.karar(x);

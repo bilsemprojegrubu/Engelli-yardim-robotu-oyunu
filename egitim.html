@@ -63,7 +63,8 @@
           <div><span id="sDeneme" class="buyuk">0</span><small>deneme</small></div>
           <div><span id="sGit" class="buyuk">–</span><small>hedefe gitme başarısı</small></div>
           <div><span id="sTara" class="buyuk">–</span><small>ev tarama kapsamı</small></div>
-          <div class="genis"><span id="sSal" class="buyuk">–</span><small>ileri-geri gidip gelme (bölüm başına, az olmalı)</small></div>
+          <div><span id="sSal" class="buyuk">–</span><small>ileri-geri gidip gelme (bölüm başına, az olmalı)</small></div>
+          <div><span id="sGeri" class="buyuk">–</span><small>geri giderek yapılan hareket (az olmalı: arkasını göremez)</small></div>
         </div>
         <p class="kucuk">Şu anki beyin: <strong id="kaynak">–</strong></p>
         <p id="kayitDurum" class="kucuk soluk" role="status">Henüz kaydedilmedi.</p>
@@ -136,7 +137,7 @@
       <h2 id="nasilBaslik">Nasıl çalışıyor? (dürüst anlatım)</h2>
       <ul class="nasil">
         <li><strong>Öğrenen kısım:</strong> küçük, hafızalı bir sinir ağı (<span id="paramSayi">–</span> sayı). Her nesilde birçok farklı ağ rastgele evlerde denenir, puanı yüksek olanlara doğru ağ güncellenir (evrim stratejisi). Kural yazılmadı.</li>
-        <li><strong>Gerçek robota benzer hareket:</strong> iki motorlu tekerlek gibi ileri/geri gider, yerinde döner, yan yan gidemez. Kamera önde (yaklaşık 200°), arkasını göremez; her yanda yalnız 1 kare yakın algı (tampon) var.</li>
+        <li><strong>Gerçek robota benzer hareket:</strong> iki motorlu tekerlek gibi ileri/geri gider, yerinde döner, yan yan gidemez. Kamera önde (yaklaşık 200°), arkasını göremez; önde ve yanlarda 1 kare yakın algı (ön tampon) var, arkada sensör yok.</li>
         <li><strong>Hafıza:</strong> robot bir önceki adımdaki düşüncesini, son hareketini ve son 10 adımda takılıp takılmadığını bilir. Böylece "az önce buradan geldim" diyebilir.</li>
         <li><strong>Ödül nedir?</strong> Sadece bir sayı, bir skor tabelası gibi. Robot bir şey hissetmez; eğitim, ağın ayarlarını puanı yükselten yöne kaydırır. Puanı yanlış yazarsak robot yanlış şeyi öğrenir; bu yüzden tablo aşağıda açıkça duruyor.</li>
         <li><strong>Ezber yok:</strong> her denemede başlangıç, yön, hedef, kapıların açık/kapalı hali ve engeller rastgele; zemin kayması (tekerlek patinajı) ve sensör gürültüsü de rastgele.</li>

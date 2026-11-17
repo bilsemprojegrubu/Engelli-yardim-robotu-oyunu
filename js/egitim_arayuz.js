@@ -20,7 +20,7 @@
   }
   function beyinUygun(v) { return v && Array.isArray(v.theta) && v.theta.length === O.PARAM_SAYISI && (v.surum === undefined || v.surum === O.SURUM); }
 
-  var egitici, egitiyor = false, denemeSayisi = 0, sonTest = { gitBasari: null, taraKapsama: null, ortSalinim: null }, kaynak = '';
+  var egitici, egitiyor = false, denemeSayisi = 0, sonTest = { gitBasari: null, taraKapsama: null, ortSalinim: null, geriOrani: null }, kaynak = '';
 
   // ---------- Günlük ----------
   function gunluk(m) {
@@ -80,6 +80,7 @@
     $('sGit').textContent = sonTest.gitBasari === null ? '–' : yuzde(sonTest.gitBasari);
     $('sTara').textContent = sonTest.taraKapsama === null ? '–' : yuzde(sonTest.taraKapsama);
     $('sSal').textContent = sonTest.ortSalinim === null ? '–' : virgul(sonTest.ortSalinim, 1);
+    $('sGeri').textContent = sonTest.geriOrani === undefined || sonTest.geriOrani === null ? '–' : '%' + Math.round(sonTest.geriOrani * 100);
   }
   function egriCiz() {
     var cv = $('egriCv'), c = cv.getContext('2d'), W = cv.width = 640, H = cv.height = 280;
@@ -150,11 +151,16 @@
     }
   });
 
+  function geriUyarisi() {
+    if (sonTest.geriOrani > 0.15)
+      gunluk('Dikkat: bu beyin geri gitmeyi alışkanlık edinmiş (hareketlerinin %' + Math.round(sonTest.geriOrani * 100) + '\'i geri). Gerçek robotta tehlikeli: sensörler önde, arkasını göremez. Bu alışkanlık eğitimle çok yavaş düzelir; "Hazır eğitilmiş beyne dön" ya da "Yeni (boş) beyin" ile yeniden eğit.');
+  }
   function yolIlerleme(son, n0) {
     if (Date.now() - sonKayitZamani > 3000) kaydet();
     if (Math.floor(egitici.nesil / 10) !== Math.floor(n0 / 10)) {
       gunluk('Nesil ' + egitici.nesil + ': ortalama ödül ' + virgul(son.ortOdul, 2) + ', hedefe gitme ' + yuzde(sonTest.gitBasari) +
         ', tarama ' + yuzde(sonTest.taraKapsama) + ', ileri-geri ' + virgul(sonTest.ortSalinim, 1) + '/bölüm');
+      if (Math.floor(egitici.nesil / 30) !== Math.floor(n0 / 30)) geriUyarisi();
       var ilk = egitici.gecmis[Math.max(0, egitici.gecmis.length - 30)];
       if (sonTest.gitBasari < 0.1 && ilk && son.ortOdul > ilk.ortOdul + 0.3)
         gunluk('Dikkat: puan artıyor ama hedefe gitme hâlâ %' + Math.round(sonTest.gitBasari * 100) + '. Robot şimdilik "hareket etmezsem çarpmam" diye ceza kaçırmayı öğreniyor (ödül açığı). Eğitime devam edince genelde geçer.');
@@ -276,7 +282,7 @@
       ['Taramada yeni yer gördü', A.yeniYer + ' × (yeni alan ÷ tüm ev)'],
       ['Her adım, hedefe giderken (oyalanmasın)', A.adimGit], ['Her adım, tararken', A.adimTara],
       ['Duvara/engele çarptı', A.carpma], ['Kapalı kapıyı açtı (zaman alır)', A.kapiAcma],
-      ['Geri gitti (arkasını göremez)', A.geri], ['Aynı kareye 3. kez ve sonra bastı', A.tekrar],
+      ['Geri gitti (sensörler önde, arkasını göremez)', A.geri], ['Hiç görmediği kareye geri geri girdi', A.korGeri], ['Aynı kareye 3. kez ve sonra bastı', A.tekrar],
       ['Az önce çıktığı kareye hemen döndü (ileri-geri)', A.salinim], ['Sola dönüp hemen sağa döndü (boşa dönüş)', A.bosaDonus],
       ['Aynı yöne 3. kez ve sonra üst üste döndü (yerinde fırıldak)', A.firildak],
       ['25 adım aynı 1-2 karede takılı kaldı: durur, sahibine haber verir', A.takildiDur]
@@ -511,7 +517,7 @@
       var durum = b.bitti ? (b.basari ? '✔ başardı' : b.durdu ? '✋ takıldım: durdum, sahibime haber veriyorum' : '✘ süre doldu') : 'çalışıyor';
       $('canliOzet').textContent = (b.mod === 'git' ? 'Görev: hedefe git (yeşil yıldız)' : 'Görev: evi tara (süpürge)') +
         ' · adım ' + b.adim + '/' + b.maksAdim + ' · ödül ' + virgul(b.toplam, 2) + ' · ' + durum +
-        (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + takildi;
+        (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + ' · geri ' + b.geriSayisi + (b.korGeriSayisi ? ' (görmeden ' + b.korGeriSayisi + ')' : '') + takildi;
       $('gorevAdim').textContent = '';
     }
     if (bOrtam) { cubuklar(BC.BECERILER[bAd].EYLEM_AD, bOlas, bOrtam.sonEylem); hafizaCiz(bAjan.h); }
@@ -648,6 +654,7 @@
   sayaclar(); egriCiz(); yeniBolum(); ciz(); bEgiticiKur();
   setTimeout(function () {
     degerlendirTest(); sayaclar();
+    geriUyarisi();
     if (kaynak !== 'Hazır eğitilmiş beyin' && sonTest.gitBasari < 0.5)
       gunluk('Not: bu beyin henüz az eğitilmiş (hedefe gitme ' + yuzde(sonTest.gitBasari) + '). Takılabilir ya da yerinde dönebilir. Eğitime devam et ya da "Hazır eğitilmiş beyne dön"e bas.');
   }, 50);
