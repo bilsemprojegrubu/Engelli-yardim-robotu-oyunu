@@ -151,6 +151,7 @@
     var say = 0, m0 = this._bfs(this.x, this.y);
     for (y = 0; y < H; y++) for (x = 0; x < W; x++) if (m0[y][x] < 1e9 && !engel[y][x]) say++;
     this.erisilebilir = say;
+    this.ulasilir = m0;                                    // robotun gerçekten gidebileceği kareler (taramada yalnız bunlar sayılır)
     this.kesfedilen = 0; this.yerler = {};
     ziyaret[this.y][this.x] = 1;
   };
@@ -182,7 +183,7 @@
     this.bilinen[cy][cx] = true;
     var mid = this.mobil[cy][cx];
     if (mid && BULUNACAK[mid] && !this.yerler[mid]) this.yerler[mid] = { x: cx, y: cy, adim: this.adim };
-    return this.engel[cy][cx] ? 0 : 1;
+    return !this.engel[cy][cx] && this.ulasilir[cy][cx] < 1e9 ? 1 : 0;   // köşe arasından görülen ulaşılmaz kare sayılmaz
   };
 
   // Sensör: önde ışınlar (duvar ardını göremez) + önde ve yanlarda 1 kare yakın algı (ön tampon).
@@ -342,7 +343,7 @@
       if (this.x === this.hx && this.y === this.hy) { odul += ODUL.varis; this.bitti = true; this.basari = true; }
     } else {
       odul += ODUL.yeniYer * yeni / Math.max(1, this.erisilebilir);
-      if (this.kesfedilen >= this.erisilebilir * 0.97) { this.bitti = true; this.basari = true; }
+      if (this.kesfedilen >= this.erisilebilir) { this.bitti = true; this.basari = true; }   // evin tamamı (ulaşılabilen her kare) görüldü
     }
     // Takılma: son 10 adımda hep aynı 1-2 kare ve bu 15 adım daha sürdüyse robot durur (gerçekte: sahibine haber verir)
     this.takiliSure = this.takilma() >= 1 ? this.takiliSure + 1 : 0;
