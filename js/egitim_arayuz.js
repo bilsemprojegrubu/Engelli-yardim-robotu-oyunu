@@ -10,6 +10,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var virgul = function (n, k) { return n.toFixed(k).replace('.', ','); };
   var yuzde = function (n) { return '%' + Math.round(n * 100); };
+  var yuzdeAsagi = function (n) { return '%' + Math.floor(n * 100 + 1e-9); };   // %99,6 "%100" görünmesin
   var KAYIT = 'robotBeyni' + O.SURUM;
   var AYAR = { lr: 0.1, sigma: 0.2, cift: 20, K: 6 };
 
@@ -78,7 +79,7 @@
     if (kaynak) $('kaynak').textContent = kaynak + ' (' + egitici.nesil + ' nesil)';
     $('sDeneme').textContent = denemeSayisi.toLocaleString('tr-TR');
     $('sGit').textContent = sonTest.gitBasari === null ? '–' : yuzde(sonTest.gitBasari);
-    $('sTara').textContent = sonTest.taraKapsama === null ? '–' : yuzde(sonTest.taraKapsama);
+    $('sTara').textContent = sonTest.taraKapsama === null ? '–' : yuzdeAsagi(sonTest.taraKapsama);
     $('sSal').textContent = sonTest.ortSalinim === null ? '–' : virgul(sonTest.ortSalinim, 1);
     $('sGeri').textContent = sonTest.geriOrani === undefined || sonTest.geriOrani === null ? '–' : '%' + Math.round(sonTest.geriOrani * 100);
   }
@@ -517,7 +518,7 @@
       var durum = b.bitti ? (b.basari ? '✔ başardı' : b.durdu ? '✋ takıldım: durdum, sahibime haber veriyorum' : '✘ süre doldu') : 'çalışıyor';
       $('canliOzet').textContent = (b.mod === 'git' ? 'Görev: hedefe git (yeşil yıldız)' : 'Görev: evi tara (süpürge)') +
         ' · adım ' + b.adim + '/' + b.maksAdim + ' · ödül ' + virgul(b.toplam, 2) + ' · ' + durum +
-        (b.mod === 'tara' ? ' · kapsam ' + yuzde(b.kapsama()) : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + ' · geri ' + b.geriSayisi + (b.korGeriSayisi ? ' (görmeden ' + b.korGeriSayisi + ')' : '') + takildi;
+        (b.mod === 'tara' ? ' · kapsam ' + yuzdeAsagi(b.kapsama()) + ' (' + b.kesfedilen + '/' + b.erisilebilir + ' kare)' : '') + ' · çarpma ' + b.carpma + ' · ileri-geri ' + b.salinim + ' · fırıldak ' + b.firildakSayisi + ' · geri ' + b.geriSayisi + (b.korGeriSayisi ? ' (görmeden ' + b.korGeriSayisi + ')' : '') + takildi;
       $('gorevAdim').textContent = '';
     }
     if (bOrtam) { cubuklar(BC.BECERILER[bAd].EYLEM_AD, bOlas, bOrtam.sonEylem); hafizaCiz(bAjan.h); }

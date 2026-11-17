@@ -58,6 +58,21 @@ test('Hazır beyin neredeyse hiç geri gitmez (< %2)', function () {
   var d = O.degerlendir(HB.theta, 40, {}, 24680);
   assert.ok(d.geriOrani < 0.02, 'geri oranı ' + d.geriOrani);
 });
+test('Tarama: "başardı" ancak ulaşılabilen her kare görülünce (taranmamış yer kalmaz)', function () {
+  var rng = O.tohum(1357), yanlis = 0, n = 40;
+  for (var i = 0; i < n; i++) {
+    var b = O.oyna(HB.theta, new O.Bolum({ mod: 'tara' }, rng), 0);
+    if (!b.basari) continue;
+    for (var y = 0; y < b.H; y++) for (var x = 0; x < b.W; x++)
+      if (b.ulasilir[y][x] < 1e9 && !b.engel[y][x] && !b.bilinen[y][x]) yanlis++;
+  }
+  assert.strictEqual(yanlis, 0, 'başarı deyip taranmamış kare: ' + yanlis);
+});
+test('Tarama: köşe arasından görülen ulaşılmaz kare sayılmaz', function () {
+  var b = new O.Bolum({ mod: 'tara' }, O.tohum(3));
+  b.ulasilir[0][0] = 1e9; b.engel[0][0] = false; b.bilinen[0][0] = false;
+  assert.strictEqual(b._isaretle(0, 0), 0);
+});
 test('Hafıza çalışır: aynı girdiye önceki adımlara göre farklı iç durum', function () {
   var w = O.yeniBeyin(O.tohum(9)), a = new O.Ajan(w), x = new Array(O.GIRIS).fill(0.3);
   var c1 = a.karar(x), c2 = a.karar(x);

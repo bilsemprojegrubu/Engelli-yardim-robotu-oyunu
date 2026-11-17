@@ -285,7 +285,7 @@ Robotun karar veren kısmı **kural değil, küçük ve hafızalı bir sinir ağ
 - **Eğittiğin beyin kalır:** eğitim sırasında birkaç saniyede bir ve sayfa kapanırken bu cihazdaki tarayıcıya kaydedilir; kapatıp açınca o gelir. Başka cihaz için "Beyni indir / yükle".
 - **Hazır eğitilmiş beyin:** `js/hazir_beyin.js` (150 nesil). Site her cihazda bilgili robotla açılır; tarayıcıda eğitime devam edilebilir, boş beyinle sıfırdan da izlenebilir. Yeniden üretmek için eğitim betiği tekrar çalıştırılır (bkz. testler).
 - **Ezber yok:** her bölümde başlangıç, yön, hedef, kapı durumu ve engeller rastgele; tekerlek patinajı ve sensör gürültüsü de rastgeleleştirilir.
-- **Süpürge gibi tarama:** robot evi başta bilmez; kendi haritasını çıkarır, mobilyaların ve odaların yerini öğrenir. Her bölümde harita sıfırdan başlar.
+- **Süpürge gibi tarama:** robot evi başta bilmez; kendi haritasını çıkarır, mobilyaların ve odaların yerini öğrenir. Her bölümde harita sıfırdan başlar. Tarama ancak robotun ulaşabildiği her kare görülünce "başardı" sayılır (köşe arasından görülen ulaşılmaz kareler sayılmaz).
 - **Canlı denetim:** gerçek ev, robotun kafasındaki harita, karar olasılıkları, hafıza hücreleri ve ileri-geri sayacı adım adım izlenir. Ödül/ceza tablosu sayfada koddaki sayılarla gösterilir.
 
 ### Beceriler ve görev zincirleri (`js/beceri.js`)
