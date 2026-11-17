@@ -111,15 +111,46 @@
     return { kayma: k, gurultu: k > 0 ? 0.1 : 0, rastgeleEngel: 5 };
   }
   function degerlendirTest() { sonTest = O.degerlendir(egitici.theta, 24, ortam(), 777); }
-  function tik() {
-    if (!egitiyor) return;
-    var t0 = performance.now(), son = null, n0 = egitici.nesil;
-    do {
-      egitici.ortam = ortam();
-      son = egitici.nesilYap();
-      denemeSayisi += egitici.cift * 2 * egitici.K;
-    } while (performance.now() - t0 < 40);
-    if (Math.floor(egitici.nesil / 5) !== Math.floor(n0 / 5)) degerlendirTest();
+  // ---------- Arka plan işçisi (Web Worker), ekranı açık tutma, hız ----------
+  var isci = null, isciHazir = false;
+  try {
+    isci = new Worker('js/egitim_isci.js');
+    isci.onerror = function (e) { if (e && e.preventDefault) e.preventDefault(); isciKapat('Arka plan işçisi açılamadı; eğitim sayfanın içinde sürecek.'); };
+    isci.onmessage = function (m) { isciHazir = true; isciMesaj(m.data); };
+  } catch (e) { isci = null; }
+  function isciKapat(neden) {
+    if (!isci) return;
+    try { isci.terminate(); } catch (e) { /* yok */ }
+    isci = null; gunluk(neden);
+    if (egitiyor) tik();
+    if (typeof bEgitiyor !== 'undefined' && bEgitiyor) bTik();
+  }
+  var hizOlcum = [], gizliBas = 0, gizliNesil = 0, uyanik = null;
+  function hizEkle(n) {
+    var simdi = Date.now(); hizOlcum.push([simdi, n]);
+    while (hizOlcum.length && simdi - hizOlcum[0][0] > 20000) hizOlcum.shift();
+    var top = hizOlcum.reduce(function (a, x) { return a + x[1]; }, 0), sure = Math.max(1, (simdi - hizOlcum[0][0]) / 1000);
+    var el = $('hizDurum'); if (el) el.textContent = 'Eğitim hızı: dakikada ~' + Math.round(top / sure * 60) + ' nesil' + (isci ? ' (arka plan işçisi)' : ' (sayfa içinde)') + '.';
+  }
+  function ekraniAcikTut(ac) {
+    try {
+      if (ac && navigator.wakeLock && !uyanik) navigator.wakeLock.request('screen').then(function (k) { uyanik = k; k.addEventListener('release', function () { uyanik = null; }); }).catch(function () { /* izin yok */ });
+      if (!ac && uyanik) { uyanik.release(); uyanik = null; }
+    } catch (e) { /* desteklenmiyor */ }
+  }
+  function egitimSuruyor() { return egitiyor || (typeof bEgitiyor !== 'undefined' && bEgitiyor); }
+  function anlikNesil() { return egitiyor ? egitici.nesil : (typeof bEgitici !== 'undefined' && bEgitici ? bEgitici.nesil : 0); }
+  document.addEventListener('visibilitychange', function () {
+    if (!egitimSuruyor()) return;
+    if (document.visibilityState === 'hidden') { gizliBas = Date.now(); gizliNesil = anlikNesil(); }
+    else if (gizliBas) {
+      var dk = (Date.now() - gizliBas) / 60000, n = anlikNesil() - gizliNesil;
+      if (dk > 0.5) gunluk('Sayfa ' + virgul(dk, 1) + ' dakika arka plandaydı ve bu sürede yalnız ' + n + ' nesil eğitildi. Tarayıcılar arka plandaki sayfayı yavaşlatır ya da dondurur; hızlı eğitim için sayfa açık ve ekran açık kalsın.');
+      gizliBas = 0; ekraniAcikTut(true);
+    }
+  });
+
+  function yolIlerleme(son, n0) {
     if (Date.now() - sonKayitZamani > 3000) kaydet();
     if (Math.floor(egitici.nesil / 10) !== Math.floor(n0 / 10)) {
       gunluk('Nesil ' + egitici.nesil + ': ortalama ödül ' + virgul(son.ortOdul, 2) + ', hedefe gitme ' + yuzde(sonTest.gitBasari) +
@@ -129,16 +160,47 @@
         gunluk('Dikkat: puan artıyor ama hedefe gitme hâlâ %' + Math.round(sonTest.gitBasari * 100) + '. Robot şimdilik "hareket etmezsem çarpmam" diye ceza kaçırmayı öğreniyor (ödül açığı). Eğitime devam edince genelde geçer.');
     }
     sayaclar(); egriCiz();
+  }
+  function tik() {
+    if (!egitiyor || isci) return;
+    var t0 = performance.now(), son = null, n0 = egitici.nesil;
+    do {
+      egitici.ortam = ortam();
+      son = egitici.nesilYap();
+      denemeSayisi += egitici.cift * 2 * egitici.K;
+    } while (performance.now() - t0 < 40);
+    if (Math.floor(egitici.nesil / 5) !== Math.floor(n0 / 5)) degerlendirTest();
+    hizEkle(egitici.nesil - n0);
+    yolIlerleme(son, n0);
     setTimeout(tik, 0);
   }
+  function isciMesaj(d) {
+    if (d.tip !== 'ilerleme') return;
+    if (d.tur === 'yol') {
+      if (!egitiyor) return;
+      var n0 = egitici.nesil;
+      for (var i = 0; i < d.theta.length; i++) egitici.theta[i] = d.theta[i];      // canlı izleme aynı diziyi kullanır
+      egitici.nesil = d.nesil; d.kayitlar.forEach(function (k) { egitici.gecmis.push(k); });
+      denemeSayisi += d.deneme;
+      if (d.test) sonTest = d.test;
+      hizEkle(d.nesil - n0);
+      yolIlerleme(d.kayitlar[d.kayitlar.length - 1], n0);
+    } else if (typeof bIsciMesaj === 'function') bIsciMesaj(d);
+  }
+  function yolBaslat() {
+    ekraniAcikTut(true); hizOlcum = [];
+    if (isci) isci.postMessage({ tip: 'basla', tur: 'yol', beyin: egitici.theta.slice(), nesil: egitici.nesil, tohum: Date.now() % 1e9, lr: egitici.lr, sigma: egitici.sigma, cift: egitici.cift, K: egitici.K, ortam: ortam() });
+    else tik();
+  }
+  function yolDurdur() { if (isci) isci.postMessage({ tip: 'dur' }); if (!egitimSuruyor()) ekraniAcikTut(false); }
   $('egitBtn').addEventListener('click', function () {
     egitiyor = !egitiyor;
     this.textContent = egitiyor ? '⏸ Duraklat' : '▶ Eğitime devam et';
     this.setAttribute('aria-pressed', String(egitiyor));
     if (egitiyor) {
       kaynak = 'Senin eğittiğin beyin';
-      gunluk('Eğitim başladı.'); tik();
-    } else { kaydet(); gunluk('Eğitim duraklatıldı (nesil ' + egitici.nesil + ').'); }
+      gunluk('Eğitim başladı.'); yolBaslat();
+    } else { yolDurdur(); kaydet(); gunluk('Eğitim duraklatıldı (nesil ' + egitici.nesil + ').'); }
   });
   function durdur() { if (egitiyor) $('egitBtn').click(); }
   $('sifirBtn').addEventListener('click', function () {
@@ -200,7 +262,7 @@
 
   // ---------- Ayarlar ----------
   $('sicaklik').addEventListener('input', function () { $('sicDeger').textContent = virgul(+this.value, 2); });
-  $('kayma').addEventListener('input', function () { $('kaymaDeger').textContent = this.value; });
+  $('kayma').addEventListener('input', function () { $('kaymaDeger').textContent = this.value; if (isci && egitiyor) isci.postMessage({ tip: 'ortam', ortam: ortam() }); });
   $('canliHiz').addEventListener('input', function () { $('canliHizDeger').textContent = this.value; });
   $('canliMod').addEventListener('change', function () { yeniBolum(); });
   $('yeniBolum').addEventListener('click', function () { yeniBolum(); });
@@ -516,24 +578,41 @@
     $('bAciklama').textContent = ad === 'kapak' ? 'Başarı: açılabilir kapağı açma. Doğru red: robotun gücünü aşan kapakta denedikten sonra "açamıyorum" deme. Kaza: şişeyi ezme ya da düşürme.'
       : 'Başarı: itilebilir eşyayı 50 cm itme. Doğru red: ağır eşyada ya da devrilme riskinde yavaşça denedikten sonra "yapamam" deme. Kaza: devrilme (simülasyonda).';
   }
-  function bTik() {
-    if (!bEgitiyor) return;
-    var t0 = performance.now(), n0 = bEgitici.nesil;
-    do { bEgitici.nesilYap(); } while (performance.now() - t0 < 40);
+  function bIlerleme(n0, testVar) {
     var ad = bSecili();
     beceriBeyin[ad] = { theta: bEgitici.theta.slice(), nesil: bEgitici.nesil, kaynak: 'Senin eğittiğin' };
     if (Math.floor(bEgitici.nesil / 10) !== Math.floor(n0 / 10)) {
-      bTest(); beceriKaydet(ad);
+      if (!testVar) bTest();
+      beceriKaydet(ad);
       gunluk(BC.BECERILER[ad].ad + ' nesil ' + bEgitici.nesil + ': başarı ' + yuzde(bSonTest.basari) + ', doğru red ' + yuzde(bSonTest.dogruRed) + ', kaza ' + yuzde(bSonTest.kaza));
     }
-    bYaz(); setTimeout(bTik, 0);
+    hizEkle(bEgitici.nesil - n0); bYaz();
+  }
+  function bTik() {
+    if (!bEgitiyor || isci) return;
+    var t0 = performance.now(), n0 = bEgitici.nesil;
+    do { bEgitici.nesilYap(); } while (performance.now() - t0 < 40);
+    bIlerleme(n0, false);
+    setTimeout(bTik, 0);
+  }
+  function bIsciMesaj(d) {
+    if (!bEgitiyor || d.tur !== bSecili()) return;
+    var n0 = bEgitici.nesil;
+    bEgitici.theta = d.theta.slice(); bEgitici.nesil = d.nesil;
+    if (d.test) bSonTest = d.test;
+    bIlerleme(n0, !!d.test || !!bSonTest);
+  }
+  function bBaslat() {
+    ekraniAcikTut(true); hizOlcum = [];
+    if (isci) isci.postMessage({ tip: 'basla', tur: bSecili(), beyin: bEgitici.theta.slice(), nesil: bEgitici.nesil, tohum: Date.now() % 1e9, lr: bEgitici.lr, sigma: bEgitici.sigma, cift: bEgitici.cift, K: bEgitici.K });
+    else bTik();
   }
   $('bEgitBtn').addEventListener('click', function () {
     bEgitiyor = !bEgitiyor;
     this.textContent = bEgitiyor ? '⏸ Duraklat' : '▶ Beceriyi eğit';
     this.setAttribute('aria-pressed', String(bEgitiyor));
-    if (bEgitiyor) { durdur(); gunluk(BC.BECERILER[bSecili()].ad + ' eğitimi başladı.'); bTik(); }
-    else { beceriKaydet(bSecili()); gunluk('Beceri eğitimi duraklatıldı.'); }
+    if (bEgitiyor) { durdur(); gunluk(BC.BECERILER[bSecili()].ad + ' eğitimi başladı.'); bBaslat(); }
+    else { if (isci) isci.postMessage({ tip: 'dur' }); if (!egitimSuruyor()) ekraniAcikTut(false); beceriKaydet(bSecili()); gunluk('Beceri eğitimi duraklatıldı.'); }
   });
   function bDurdur() { if (bEgitiyor) $('bEgitBtn').click(); }
   $('egitBtn').addEventListener('click', function () { if (egitiyor) bDurdur(); });
