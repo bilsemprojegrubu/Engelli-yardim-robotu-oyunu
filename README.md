@@ -281,6 +281,7 @@ Robotun karar veren kısmı **kural değil, küçük ve hafızalı bir sinir ağ
 
 - **Gerçek robota benzer hareket:** ileri, geri, sola dön, sağa dön (iki motorlu tekerlek; yan yan gidemez). Kamera önde (~200°), arkasını göremez.
 - **Hafıza:** ağ bir önceki adımdaki iç durumunu, son hareketini ve takılıp takılmadığını bilir. İleri-geri gidip gelmek, boşa dönmek ve yerinde fırıldak gibi dönmek ceza alır. 25 adım aynı yerde takılı kalan robot durur ve "takıldım" der (gerçekte sahibine haber verir).
+- **Eğitim hızı:** eğitim ayrı bir arka plan işçisinde (Web Worker) koşar, sayfa donmaz; eğitim sürerken ekranın kapanması engellenmeye çalışılır (Wake Lock). Sayfa açıkken bilgisayarda dakikada yüzlerce nesil eğitilir. Telefonda ekran kapanınca ya da tarayıcı arka plana geçince işletim sistemi sayfayı yavaşlatır/dondurur, eğitim neredeyse durur; bu bir web sayfasında engellenemez. Sayfada hız göstergesi ve arka plan uyarısı var.
 - **Eğittiğin beyin kalır:** eğitim sırasında birkaç saniyede bir ve sayfa kapanırken bu cihazdaki tarayıcıya kaydedilir; kapatıp açınca o gelir. Başka cihaz için "Beyni indir / yükle".
 - **Hazır eğitilmiş beyin:** `js/hazir_beyin.js` (150 nesil). Site her cihazda bilgili robotla açılır; tarayıcıda eğitime devam edilebilir, boş beyinle sıfırdan da izlenebilir. Yeniden üretmek için eğitim betiği tekrar çalıştırılır (bkz. testler).
 - **Ezber yok:** her bölümde başlangıç, yön, hedef, kapı durumu ve engeller rastgele; tekerlek patinajı ve sensör gürültüsü de rastgeleleştirilir.
